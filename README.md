@@ -19,11 +19,12 @@ npm run preview    # preview the built site locally
 
 ## Docker
 
-Multi-stage build (Node build stage -> nginx serving static files on port 80):
+Multi-stage build (Node build stage -> nginx serving static files on port 8080,
+matching the `deploy-goobta.io` Caddyfile which proxies to `website:8080`):
 
 ```bash
 docker build -t goobta-site .
-docker run --rm -p 8080:80 goobta-site   # http://localhost:8080
+docker run --rm -p 8080:8080 goobta-site   # http://localhost:8080
 ```
 
 ## Deploy
