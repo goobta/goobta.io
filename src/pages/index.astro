@@ -67,6 +67,10 @@ const rows = [
       }
     </nav>
   </main>
+
+  <footer>
+    <span>© {name} {new Date().getFullYear()}</span>
+  </footer>
 </Base>
 
 <style>
@@ -115,6 +119,13 @@ const rows = [
     outline: 2px solid var(--icon-hover);
     outline-offset: 6px;
     border-radius: 4px;
+  }
+
+  footer {
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
   }
 
   @media (prefers-reduced-motion: reduce) {
