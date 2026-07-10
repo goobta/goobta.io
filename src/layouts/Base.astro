@@ -28,17 +28,23 @@ const {
 <style is:global>
   :root {
     color-scheme: light dark;
-    --bg: #ffffff;
-    --fg: #1a1a1a;
-    --muted: #6b7280;
+    --bg-1: #f4f4f5;
+    --bg-2: #dcdce0;
+    --fg: #2a2a2d;
+    --muted: #8a8a90;
+    --icon: #3a3a3d;
+    --icon-hover: #0a0a0a;
     --accent: #5b3df5;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0e0e11;
-      --fg: #f5f5f7;
-      --muted: #9ca3af;
+      --bg-1: #16161a;
+      --bg-2: #0a0a0c;
+      --fg: #f0f0f2;
+      --muted: #6b6b72;
+      --icon: #c9c9ce;
+      --icon-hover: #ffffff;
     }
   }
 
@@ -53,7 +59,10 @@ const {
   }
 
   body {
-    background: var(--bg);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(130% 130% at 50% 35%, var(--bg-1), var(--bg-2));
     color: var(--fg);
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
