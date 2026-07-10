@@ -44,10 +44,6 @@ const rows = [
 ---
 
 <Base title={name} description={`${name} — personal site.`}>
-  <header>
-    <span class="name">{name}</span>
-  </header>
-
   <main>
     <nav class="socials" aria-label="Social links">
       {
@@ -71,24 +67,9 @@ const rows = [
       }
     </nav>
   </main>
-
-  <footer>
-    <span>© {name} {new Date().getFullYear()}</span>
-  </footer>
 </Base>
 
 <style>
-  header {
-    padding: 2.25rem 2.5rem;
-  }
-
-  .name {
-    font-size: 1.9rem;
-    font-weight: 400;
-    letter-spacing: 0.01em;
-    color: var(--fg);
-  }
-
   main {
     flex: 1;
     display: grid;
@@ -134,13 +115,6 @@ const rows = [
     outline: 2px solid var(--icon-hover);
     outline-offset: 6px;
     border-radius: 4px;
-  }
-
-  footer {
-    padding: 1.5rem;
-    text-align: center;
-    color: var(--muted);
-    font-size: 0.9rem;
   }
 
   @media (prefers-reduced-motion: reduce) {
