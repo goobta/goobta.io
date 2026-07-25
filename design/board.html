@@ -1,0 +1,2132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>goobta.io &mdash; five redesign directions</title>
+<style>
+*,*::before,*::after{box-sizing:border-box} body{margin:0}
+
+:root{
+  --ground:#FBFBFC; --panel:#FFFFFF; --ink:#1A1D22; --ink-2:#5A6069;
+  --rule:#E2E4E8; --rule-2:#EDEEF1; --accent:#2F5D77; --top:#1E6B4F;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ground:#0E1013; --panel:#16191E; --ink:#EDEFF2; --ink-2:#9AA1AB;
+    --rule:#262A31; --rule-2:#1D2127; --accent:#7FB2CB; --top:#6FD3A8;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1013; --panel:#16191E; --ink:#EDEFF2; --ink-2:#9AA1AB;
+  --rule:#262A31; --rule-2:#1D2127; --accent:#7FB2CB; --top:#6FD3A8;
+}
+:root[data-theme="light"]{
+  --ground:#FBFBFC; --panel:#FFFFFF; --ink:#1A1D22; --ink-2:#5A6069;
+  --rule:#E2E4E8; --rule-2:#EDEEF1; --accent:#2F5D77; --top:#1E6B4F;
+}
+
+.pb{
+  background:var(--ground); color:var(--ink); font-family:var(--sans);
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  padding:clamp(1.25rem,4vw,3.5rem) clamp(1rem,4vw,3rem) 4rem;
+  max-width:1180px; margin-inline:auto;
+}
+.pb *{box-sizing:border-box}
+
+/* masthead ---------------------------------------------------------------- */
+.pb-head{display:flex; flex-direction:column; gap:1.15rem; padding-bottom:2rem;
+  border-bottom:1px solid var(--rule); margin-bottom:3rem}
+.pb-eyebrow{font-family:var(--mono); font-size:.7rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-2); margin:0}
+.pb-h1{font-size:clamp(1.9rem,5.5vw,3rem); line-height:1.04; letter-spacing:-.03em;
+  font-weight:680; margin:0; text-wrap:balance}
+.pb-lede{margin:0; max-width:62ch; color:var(--ink-2); font-size:1.02rem}
+.pb-lede strong{color:var(--ink); font-weight:600}
+.pb-chips{display:flex; flex-wrap:wrap; gap:.4rem; margin:0; padding:0; list-style:none}
+.pb-chips li{font-family:var(--mono); font-size:.68rem; letter-spacing:.02em;
+  color:var(--ink-2); border:1px solid var(--rule); border-radius:2px;
+  padding:.28rem .5rem; background:var(--panel)}
+
+/* specimen ---------------------------------------------------------------- */
+.pb-spec{padding:2.5rem 0; border-bottom:1px solid var(--rule)}
+.pb-spec:last-of-type{border-bottom:0}
+.pb-spec__bar{display:flex; align-items:baseline; flex-wrap:wrap; gap:.55rem .85rem}
+.pb-spec__rank{font-family:var(--mono); font-size:.72rem; letter-spacing:.1em;
+  color:var(--ink-2); border:1px solid var(--rule); border-radius:2px; padding:.2rem .4rem}
+.pb-spec__name{font-size:clamp(1.25rem,3vw,1.6rem); letter-spacing:-.02em;
+  font-weight:650; margin:0; line-height:1.15}
+.pb-badge{font-family:var(--mono); font-size:.66rem; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--top);
+  border:1px solid currentColor; border-radius:2px; padding:.2rem .45rem}
+.pb-spec--top .pb-spec__rank{color:var(--top); border-color:currentColor}
+
+.pb-scores{display:flex; gap:.1rem; margin:0 0 0 auto; padding:0}
+.pb-score{display:flex; flex-direction:column; align-items:center; min-width:3.1rem;
+  padding:.1rem .3rem; border-left:1px solid var(--rule)}
+.pb-score:first-child{border-left:0}
+.pb-score dt{font-family:var(--mono); font-size:.62rem; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-2)}
+.pb-score dd{margin:0; font-family:var(--mono); font-size:.95rem; font-weight:600;
+  font-variant-numeric:tabular-nums}
+.pb-score--avg dd{color:var(--ink)}
+.pb-spec--top .pb-score--avg dd{color:var(--top)}
+
+.pb-concept{margin:.9rem 0 1.6rem; max-width:70ch; color:var(--ink-2)}
+
+.pb-body{display:grid; gap:1.75rem 2.25rem; grid-template-columns:minmax(0,1fr);
+  align-items:start}
+@media (min-width:920px){.pb-body{grid-template-columns:480px minmax(0,1fr)}}
+
+/* the stage — a hairline-mounted canvas, deliberately the loudest thing here */
+.pb-stagewrap{display:flex; flex-direction:column; gap:.55rem; min-width:0}
+/* Specificity note: a direction's own `SCOPE {}` rule compiles to `.pb-stage.dN`
+   (0,2,0), which outranks a bare `.pb-stage` — d4's `height:100%` was collapsing its
+   stage to its 25rem min-height while the others sat at 440px. The extra `.pb`
+   ancestor + attribute selector takes this to (0,4,0) so stage GEOMETRY is uniform
+   across all five and the comparison is fair. Deliberately sets no `display`,
+   `padding` or color, so each direction keeps full control of its own layout. */
+.pb .pb-stage[data-stage]{
+  width:100%; max-width:480px; height:440px; overflow:hidden; position:relative;
+  border:1px solid var(--rule); border-radius:3px; isolation:isolate;
+  box-shadow:0 1px 2px rgb(0 0 0 / .04), 0 8px 24px -12px rgb(0 0 0 / .12);
+}
+@media (prefers-color-scheme:dark){
+  .pb-stage{box-shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px -10px rgb(0 0 0 / .5)}
+}
+.pb-stagefoot{display:flex; align-items:center; justify-content:space-between;
+  gap:.75rem; max-width:480px; flex-wrap:wrap}
+.pb-replay{font-family:var(--mono); font-size:.68rem; letter-spacing:.04em; color:var(--accent);
+  background:none; border:1px solid var(--rule); border-radius:2px; padding:.3rem .55rem;
+  cursor:pointer}
+.pb-replay:hover{border-color:var(--accent)}
+.pb-replay:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.pb-dim{font-family:var(--mono); font-size:.65rem; color:var(--ink-2);
+  font-variant-numeric:tabular-nums}
+
+/* dossier ----------------------------------------------------------------- */
+.pb-dossier{display:flex; flex-direction:column; gap:1.35rem; min-width:0}
+.pb-facts{display:grid; grid-template-columns:auto minmax(0,1fr); gap:.4rem .9rem; margin:0}
+.pb-facts dt{font-family:var(--mono); font-size:.66rem; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink-2); padding-top:.15rem}
+.pb-facts dd{margin:0; font-size:.9rem}
+
+.pb-swatches{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;
+  gap:.4rem; border-top:1px solid var(--rule-2); padding-top:.9rem}
+.pb-sw{display:grid; grid-template-columns:auto auto minmax(0,1fr); gap:.6rem;
+  align-items:center; font-size:.78rem}
+.pb-sw__chips{display:flex; border:1px solid var(--rule); border-radius:2px; overflow:hidden}
+.pb-sw__c{width:14px; height:14px; display:block}
+.pb-sw__tok{font-family:var(--mono); font-size:.72rem; color:var(--ink)}
+.pb-sw__role{color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+.pb-fixes{border:1px solid var(--rule); border-left:2px solid var(--top);
+  border-radius:2px; padding:.85rem 1rem; background:var(--panel)}
+.pb-fixes__h{margin:0 0 .5rem; font-size:.82rem; font-weight:620}
+.pb-fixes__h span{font-family:var(--mono); font-size:.7rem; color:var(--top); font-weight:400}
+.pb-fixes ul{margin:0; padding-left:1.1rem; font-size:.8rem; color:var(--ink-2);
+  display:flex; flex-direction:column; gap:.4rem}
+.pb-fixes code, .pb-more code{font-family:var(--mono); font-size:.92em;
+  background:var(--rule-2); padding:.05em .3em; border-radius:2px; color:var(--ink)}
+
+.pb-verdict{margin:0 0 .6rem; font-size:.85rem; color:var(--ink-2)}
+.pb-lens{font-family:var(--mono); font-size:.64rem; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--accent); margin-right:.4rem}
+
+.pb-more{border-top:1px solid var(--rule-2); padding-top:.9rem}
+.pb-more summary{font-family:var(--mono); font-size:.7rem; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--accent); cursor:pointer}
+.pb-more summary:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.pb-more__in{padding-top:1rem; font-size:.85rem}
+.pb-more h4{font-family:var(--mono); font-size:.66rem; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink-2); margin:1.1rem 0 .45rem; font-weight:500}
+.pb-list{margin:0; padding-left:1.1rem; color:var(--ink-2); display:flex;
+  flex-direction:column; gap:.35rem}
+.pb-note{margin:0; color:var(--ink-2)}
+
+/* closing ---------------------------------------------------------------- */
+.pb-close{margin-top:3.5rem; padding-top:2rem; border-top:1px solid var(--rule);
+  display:flex; flex-direction:column; gap:1.1rem}
+.pb-close h2{font-size:1.4rem; letter-spacing:-.02em; margin:0; font-weight:650}
+.pb-close p{margin:0; max-width:68ch; color:var(--ink-2)}
+.pb-close strong{color:var(--ink); font-weight:600}
+.pb-crossgrid{display:grid; gap:1rem; grid-template-columns:minmax(0,1fr)}
+@media (min-width:760px){.pb-crossgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pb-cross{border:1px solid var(--rule); border-radius:3px; padding:1rem;
+  background:var(--panel); font-size:.82rem}
+.pb-cross h3{font-family:var(--mono); font-size:.66rem; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--accent); margin:0 0 .5rem; font-weight:500}
+.pb-cross p{margin:0; color:var(--ink-2)}
+.pb-cross b{color:var(--ink)}
+
+@media (prefers-reduced-motion:reduce){
+  .pb-replay{display:none}
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPECIMEN STYLES — authored per direction, every selector originally scoped
+   to a SCOPE token, mechanically rewritten to .pb-stage.dN at assembly so
+   five competing identities can coexist on one page without leaking.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* ===== d1 · The Index Page ===== */
+/* ═══ d1 · The Index Page ══════════════════════════════════════════════
+   Type is the design. Hairlines are exactly 1px and never scale.
+   Vertical rhythm (preview box, measured in Chrome, not estimated):
+   28 pad · 40.8 name · 13 · 43.5 deck · 26 · 221.17 index (1 + 6×36.695)
+   · 20 · 13.2 colophon · 26 pad = 431.7px inside a ~440px panel.
+   ────────────────────────────────────────────────────────────────────── */
+
+.pb-stage.d1 {
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --paper: #f5f5f3;
+  --ink: #16161a;
+  --ink-soft: #55555c;
+  --rule: rgba(22, 22, 26, 0.14);
+  --rule-strong: rgba(22, 22, 26, 0.32);
+  --accent: #4b31d9;
+
+  display: flex;
+  min-height: 25rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* The host page's reset is not guaranteed, and this design's measure is a
+   load-bearing number. Under content-box, `max-width: 34rem` caps the
+   CONTENT box, so the column's real cap becomes 34rem + 3.5rem padding =
+   37.5rem: measured 560px instead of 544px in a 560px panel. Enumerated
+   per element rather than using a `*` selector. */
+.pb-stage.d1,
+.pb-stage.d1 .page,
+.pb-stage.d1 .masthead,
+.pb-stage.d1 .index,
+.pb-stage.d1 .row,
+.pb-stage.d1 .ico,
+.pb-stage.d1 .note,
+.pb-stage.d1 .mark,
+.pb-stage.d1 .colophon,
+.pb-stage.d1 .vh {
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  .pb-stage.d1 {
+    --paper: #0e0e10;
+    --ink: #f4f4f2;
+    --ink-soft: #9e9ea6;
+    --rule: rgba(244, 244, 242, 0.14);
+    --rule-strong: rgba(244, 244, 242, 0.30);
+    --accent: #a99bff;
+  }
+}
+
+:root[data-theme="dark"] .pb-stage.d1 {
+  --paper: #0e0e10;
+  --ink: #f4f4f2;
+  --ink-soft: #9e9ea6;
+  --rule: rgba(244, 244, 242, 0.14);
+  --rule-strong: rgba(244, 244, 242, 0.30);
+  --accent: #a99bff;
+}
+
+:root[data-theme="light"] .pb-stage.d1 {
+  --paper: #f5f5f3;
+  --ink: #16161a;
+  --ink-soft: #55555c;
+  --rule: rgba(22, 22, 26, 0.14);
+  --rule-strong: rgba(22, 22, 26, 0.32);
+  --accent: #4b31d9;
+}
+
+/* background-color, not the `background` shorthand: ::selection honours a
+   restricted property set and the shorthand is not portable there. */
+.pb-stage.d1 ::selection {
+  background-color: color-mix(in oklab, var(--accent) 20%, transparent);
+}
+
+.pb-stage.d1 .page { margin-inline: auto;
+  flex: 1;
+  min-width: 0;
+  max-width: 34rem;
+  padding: 1.75rem 1.75rem 1.625rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ── Masthead ───────────────────────────────────────────────────────── */
+
+.pb-stage.d1 .name {
+  margin: 0 0 0 -0.025em;              /* optical left align: pull the A stem to the rule edge */
+  font-size: 2.5rem;
+  font-weight: 640;
+  line-height: 1.02;
+  letter-spacing: -0.038em;
+  color: var(--ink);
+}
+
+.pb-stage.d1 .stop {
+  color: var(--accent);
+  margin-left: -0.01em;
+}
+
+.pb-stage.d1 .deck {
+  margin: 0.8125rem 0 0;
+  max-width: 24rem;                    /* forces a deliberate two-line deck at every panel width */
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: -0.003em;
+  color: var(--ink-soft);
+  text-wrap: balance;
+}
+
+/* ── Index ──────────────────────────────────────────────────────────── */
+
+.pb-stage.d1 .index {
+  margin-top: 1.625rem;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.pb-stage.d1 .row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 0.875rem max-content minmax(0, 1fr) 0.625rem;
+  column-gap: 0.8125rem;
+  align-items: baseline;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--rule);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 140ms linear;
+}
+
+.pb-stage.d1 .label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.115em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* The clip is load-bearing, not decorative: without it a long note bursts
+   the panel horizontally (measured: a 334px note pushed scrollWidth to
+   473px in a 380px panel). With the real strings there is 51px of slack at
+   the 380px floor — longest note "rukna1000@gmail.com" is 127px against
+   178px of track — so it never actually engages. */
+.pb-stage.d1 .note {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 1.5rem;                /* floor of 37px between label and annotation */
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.005em;
+  color: var(--ink-soft);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Icons: one 14px optical box, one color, no shadow.
+   Per-mark scale normalises the mismatched weights of the six glyphs. */
+.pb-stage.d1 .ico {
+  align-self: center;
+  display: flex;
+  line-height: 0;
+  color: var(--ink-soft);
+  transition: color 140ms linear;
+}
+
+/* transform-box/origin pinned: an <svg> root's transform-origin has a
+   history of resolving to `0 0` rather than `50% 50%`, which turns every
+   optical scale below into an off-centre nudge. */
+.pb-stage.d1 .ico svg {
+  display: block;
+  width: 0.875rem;
+  height: 0.875rem;
+  transform-box: border-box;
+  transform-origin: 50% 50%;
+}
+
+.pb-stage.d1 .r-github .ico svg   { transform: scale(0.94); }   /* filled disc, reads heavy */
+.pb-stage.d1 .r-linkedin .ico svg { transform: scale(0.90); }   /* filled square, heaviest */
+.pb-stage.d1 .r-email .ico svg    { transform: scale(0.97); }   /* wide, short */
+.pb-stage.d1 .r-strava .ico svg   { transform: scale(1.14); }   /* thin chevron, reads light */
+.pb-stage.d1 .r-spotify .ico svg  { transform: scale(0.94); }   /* filled disc */
+.pb-stage.d1 .r-venmo .ico svg    { transform: scale(1.06); }   /* baseline-set V sits high */
+
+/* The trailing mark is a 1px chevron — same hairline weight as the rules. */
+.pb-stage.d1 .mark {
+  align-self: center;
+  justify-self: end;
+  width: 0.375rem;
+  height: 0.375rem;
+  margin-right: 1px;
+  border-top: 1px solid var(--ink-soft);
+  border-right: 1px solid var(--ink-soft);
+  border-top-right-radius: 1px;
+  transform: rotate(45deg);
+  transition:
+    transform 180ms cubic-bezier(0.22, 0.68, 0.24, 1),
+    border-color 140ms linear;
+}
+
+.pb-stage.d1 .row:hover {
+  border-bottom-color: var(--accent);
+}
+
+.pb-stage.d1 .row:hover .mark {
+  transform: translateX(3px) rotate(45deg);
+  border-color: var(--accent);
+}
+
+.pb-stage.d1 .row:hover .ico,
+.pb-stage.d1 .row:focus-visible .ico {
+  color: var(--ink);
+}
+
+.pb-stage.d1 .row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.pb-stage.d1 .row:focus-visible .mark {
+  border-color: var(--accent);
+}
+
+/* ── Colophon ───────────────────────────────────────────────────────── */
+
+.pb-stage.d1 .colophon { flex-wrap: wrap;
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.pb-stage.d1 .site,
+.pb-stage.d1 .copy {
+  /* nowrap removed — caused 1.4.10 h-scroll at large root font */
+}
+
+.pb-stage.d1 .vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+/* ── Genuinely narrow viewports only (max-width never misfires in a
+      side-by-side panel grid on a wide screen) ───────────────────────── */
+
+@media (max-width: 430px) {
+  .pb-stage.d1 .page {
+    padding: 1.5rem 1.25rem 1.375rem;
+  }
+  .pb-stage.d1 .name {
+    font-size: 2.125rem;
+    letter-spacing: -0.034em;
+  }
+  .pb-stage.d1 .note {
+    display: none;
+  }
+  /* 14 + 15.6 + 14 + 1 = 44.6px rows — a real 44px touch target, paid for
+     with the height freed by dropping the annotation column. */
+  .pb-stage.d1 .row {
+    grid-template-columns: 0.875rem 1fr 0.625rem;
+    padding: 0.875rem 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-stage.d1 .row,
+  .pb-stage.d1 .mark,
+  .pb-stage.d1 .ico {
+    transition: none;
+  }
+  .pb-stage.d1 .row:hover .mark {
+    transform: rotate(45deg);
+  }
+}
+/* ===== d4 · Structural Grid ===== */
+/* ============ d4 — Structural Grid ============ */
+
+.pb-stage.d4 {
+  /* light */
+  --ground: #f5f4f1;
+  --ink: #101012;
+  --ink-2: #4a4a50;
+  --ink-3: #5f5f67;
+  --ink-3-inv: #a5a5ad;
+  --rule: #222226;
+  --accent: #5b3df5;
+  --on-accent: #ffffff;
+
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  box-sizing: border-box;
+  container-type: inline-size;
+  display: flex;
+  height: 100%;
+  min-height: 25rem;
+  padding: 0.875rem;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  .pb-stage.d4 {
+    --ground: #0e0e11;
+    --ink: #f2f1ee;
+    --ink-2: #a8a8b0;
+    --ink-3: #8e8e97;
+    --ink-3-inv: #5f5f67;
+    --rule: #62626b;
+    --accent: #6a4cfb;
+    --on-accent: #ffffff;
+  }
+}
+
+:root[data-theme="dark"] .pb-stage.d4 {
+  --ground: #0e0e11;
+  --ink: #f2f1ee;
+  --ink-2: #a8a8b0;
+  --ink-3: #8e8e97;
+  --ink-3-inv: #5f5f67;
+  --rule: #62626b;
+  --accent: #6a4cfb;
+  --on-accent: #ffffff;
+}
+
+:root[data-theme="light"] .pb-stage.d4 {
+  --ground: #f5f4f1;
+  --ink: #101012;
+  --ink-2: #4a4a50;
+  --ink-3: #5f5f67;
+  --ink-3-inv: #a5a5ad;
+  --rule: #222226;
+  --accent: #5b3df5;
+  --on-accent: #ffffff;
+}
+
+/* ---- the grid itself: 1px gaps over a rule-coloured ground ---- */
+
+.pb-stage.d4 .frame {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 4.5rem;
+  grid-template-rows: minmax(7.5rem, 1.05fr) auto minmax(11rem, 1fr) auto;
+  grid-template-areas:
+    "nm mk"
+    "rl mk"
+    "nv mk"
+    "mt mk";
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+
+/* ---- name: flush bottom-left of the largest cell ---- */
+
+.pb-stage.d4 .name {
+  box-sizing: border-box;
+  grid-area: nm;
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem 1.125rem 1rem;
+  background: var(--ground);
+  color: var(--ink);
+  font-size: 2.75rem;
+  font-size: clamp(2rem, 10cqi, 3rem);
+  font-weight: 800;
+  line-height: 0.86;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.pb-stage.d4 .name span {
+  display: block;
+}
+
+/* ---- role: thin mono band ---- */
+
+.pb-stage.d4 .role {
+  box-sizing: border-box;
+  grid-area: rl;
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.6em;
+  row-gap: 0.3rem;
+  padding: 0.6875rem 1.125rem 0.75rem;
+  background: var(--ground);
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  line-height: 1.3;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+}
+
+.pb-stage.d4 .role .sep {
+  color: var(--ink-3);
+}
+
+/* ---- the accent spine: the one filled cell ---- */
+
+.pb-stage.d4 .mark {
+  box-sizing: border-box;
+  grid-area: mk;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  padding: 0.875rem 0 1.125rem;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.pb-stage.d4 .mark-glyph {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.pb-stage.d4 .mark-word {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  line-height: 1;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+/* ---- six link cells, column-major: 01-03 work, 04-06 not ---- */
+
+.pb-stage.d4 .links {
+  box-sizing: border-box;
+  grid-area: nv;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1.18fr 1fr;
+  grid-template-rows: repeat(3, 1fr);
+  grid-auto-flow: column;
+  gap: 1px;
+  background: var(--rule);
+}
+
+.pb-stage.d4 .cell {
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--ground);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color 80ms linear, color 80ms linear;
+}
+
+.pb-stage.d4 .idx {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+  transition: color 80ms linear;
+}
+
+.pb-stage.d4 .face {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  min-width: 0;
+}
+
+.pb-stage.d4 .glyph {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.pb-stage.d4 .glyph svg {
+  display: block;
+  width: var(--g, 1.0625rem);
+  height: var(--g, 1.0625rem);
+  fill: currentColor;
+}
+
+/* optical sizing, mark by mark — filled circles read heavier than hairlines */
+.pb-stage.d4 .c-github   { --g: 1.0625rem; }
+.pb-stage.d4 .c-linkedin { --g: 0.9375rem; }
+.pb-stage.d4 .c-email    { --g: 1.1875rem; }
+.pb-stage.d4 .c-strava   { --g: 1.25rem; }
+.pb-stage.d4 .c-spotify  { --g: 1.0625rem; }
+.pb-stage.d4 .c-venmo    { --g: 1.25rem; }
+
+/* The Venmo asset draws its V as an SVG <text> node with font-family,
+   font-style and font-weight set as presentation attributes, which lose to any
+   author rule. So the serif italic can be pulled into the display face from
+   here, at the asset's own font-size, until the asset itself is replaced. */
+.pb-stage.d4 .c-venmo .glyph svg text {
+  font-family: var(--sans);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.pb-stage.d4 .label {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---- hover: the whole cell inverts. nothing moves. ---- */
+
+.pb-stage.d4 .cell:hover {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+.pb-stage.d4 .cell:hover .idx {
+  color: var(--ink-3-inv);
+}
+
+/* ---- focus: the accent claims the cell instead ---- */
+
+.pb-stage.d4 .cell:focus-visible {
+  background: var(--accent);
+  color: var(--on-accent);
+  outline: 2px solid var(--on-accent);
+  outline-offset: -6px;
+}
+
+.pb-stage.d4 .cell:focus-visible .idx {
+  color: var(--on-accent);
+}
+
+/* ---- footer metadata ---- */
+
+.pb-stage.d4 .meta {
+  box-sizing: border-box;
+  grid-area: mt;
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5625rem 1.125rem 0.625rem;
+  background: var(--ground);
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.pb-stage.d4 .meta .year {
+  flex: 0 0 auto;
+  color: var(--ink-3);
+}
+
+/* ---- narrow panel ---- */
+
+@container (max-width: 27rem) {
+  .pb-stage.d4 .frame { grid-template-columns: 1fr 3.5rem; }
+  .pb-stage.d4 .mark { padding: 0.75rem 0 1rem; }
+  .pb-stage.d4 .mark-glyph { font-size: 2rem; }
+  .pb-stage.d4 .name { padding: 1.125rem 0.875rem 0.875rem; }
+  .pb-stage.d4 .role {
+    flex-direction: column;
+    align-items: flex-start;
+    row-gap: 0.25rem;
+    padding: 0.625rem 0.875rem 0.6875rem;
+  }
+  .pb-stage.d4 .role .sep { display: none; }
+  .pb-stage.d4 .meta { padding: 0.5rem 0.875rem 0.5625rem; }
+  .pb-stage.d4 .cell { padding: 0.4375rem 0.6875rem; gap: 0.5rem; }
+  .pb-stage.d4 .face { gap: 0.4375rem; }
+  .pb-stage.d4 .label { font-size: 0.625rem; letter-spacing: 0.06em; }
+}
+
+/* ---- motion + forced colours ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-stage.d4 .cell { transition: none; }
+  .pb-stage.d4 .idx { transition: none; }
+}
+
+@media (forced-colors: active) {
+  .pb-stage.d4 .frame { border-color: CanvasText; }
+  .pb-stage.d4 .name,
+  .pb-stage.d4 .role,
+  .pb-stage.d4 .mark,
+  .pb-stage.d4 .meta,
+  .pb-stage.d4 .cell { border: 1px solid CanvasText; }
+  .pb-stage.d4 .cell:hover { outline: 2px solid; outline-offset: -4px; }
+  .pb-stage.d4 .cell:focus-visible { outline: 3px solid; outline-offset: -4px; }
+}
+/* ===== d2 · Prompt Line ===== */
+.pb-stage.d2 {
+  /* --- ground: near-black, faint violet cast, light from upper-left --- */
+  --ground-a: #14141d;
+  --ground-b: #0b0b11;
+  --ground-c: #07070b;
+
+  /* --- ink: two levels, plus one for the year.
+         Ratios below are measured on the LIGHTEST ground stop (--ground-a)
+         WITH the grain overlay composited in, i.e. the true worst case. --- */
+  --ink:   #eceaf4;      /* 14.7:1 */
+  --ink-2: #9a97a8;      /*  6.1:1 — tagline, paths, resting marks */
+  --ink-3: #8c8a99;      /*  5.2:1 — year (was #82808f at 4.4:1) */
+
+  /* --- the one phosphor: #5b3df5 (the favicon) lifted until it passes AA --- */
+  --phos:   #a78bff;     /*  6.5:1 on ground, 5.5:1 on the selection bar */
+  --phos-2: #9880ea;     /*  5.5:1 — prompt sigils (was #8a72e0 at 4.5:1) */
+
+  --rule: rgba(167, 139, 255, 0.22);
+  --sel:  rgba(122, 92, 255, 0.15);
+  --sel-active: rgba(122, 92, 255, 0.24);
+
+  --t: 120ms;
+
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  overflow: hidden;
+  background: radial-gradient(115% 85% at 20% -5%,
+    var(--ground-a) 0%, var(--ground-b) 52%, var(--ground-c) 100%);
+  color: var(--ink);
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Grain, purely to stop the dark gradient from banding. Held at 0.03: this
+   noise has mean alpha 0.5 and mean channel ~186, so at 0.05 it lifted the
+   ground's luminance ~30% and dragged the quiet inks under 4.5:1. */
+.pb-stage.d2::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+.pb-stage.d2 ::selection {
+  background: rgba(167, 139, 255, 0.3);
+  color: #ffffff;
+}
+
+/* A tight measure. The transcript never sprawls, however wide the window.
+   margin-block:auto (not justify-content:center on the flex parent) does the
+   vertical centring: auto margins resolve to 0 when free space is negative,
+   so a tall narrow panel can never clip the top of the name off-screen. */
+.pb-stage.d2 .term {
+  /* --- grid metrics: one spine for every line on the page.
+         These live on .term, NOT on .pb-stage.d2: .pb-stage.d2 is the query container, and a
+         container query can never restyle its own container. Declared here,
+         the @container blocks below can actually move them. --- */
+  --px: 1.5rem;          /* line inset; hairlines + selection bars bleed past it */
+  --gutter: 1.625rem;    /* holds "~ %" and the selection marker, right-aligned */
+  --iconcol: 1.0625rem;  /* one character cell for every mark */
+  --cg: 0.625rem;        /* column gap = roughly one mono space */
+  --lbcol: 8.5ch;        /* longest label is "linkedin" (8); resolves against
+                            .row's own font-size, which is the label size */
+
+  position: relative;
+  width: 100%;
+  max-width: 33rem;
+  margin-inline: auto;
+  margin-block: auto;
+  padding-block: 1.625rem;
+}
+
+/* ---------- prompt line: the name, run as a command ---------- */
+
+.pb-stage.d2 .name {
+  display: grid;
+  grid-template-columns: var(--gutter) minmax(0, 1fr);
+  column-gap: var(--cg);
+  align-items: baseline;
+  margin: 0;
+  padding-inline: var(--px);
+  font-size: 1rem;   /* neutralise the h1 default before .nm sets the real size */
+  font-weight: 400;
+}
+
+/* Right-aligned in the gutter, so the "%" and the selection marker point into
+   the content from the same x. The sigil sits on the name's baseline. */
+.pb-stage.d2 .sig {
+  justify-self: end;
+  font-size: 0.8125rem;
+  line-height: 1;
+  color: var(--phos-2);
+  white-space: pre;
+}
+
+.pb-stage.d2 .nm {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.028em;  /* mono is too loose at display size */
+  color: var(--ink);
+}
+
+/* Two deliberate output lines — the work, then the rest of it. Never a ragged wrap. */
+.pb-stage.d2 .tag {
+  margin: 0.5rem 0 0;
+  padding-left: calc(var(--px) + var(--gutter) + var(--cg));
+  padding-right: var(--px);
+  font-size: 0.8125rem;
+  line-height: 1.62;
+  color: var(--ink-2);
+}
+
+.pb-stage.d2 .tag span {
+  display: block;
+  text-wrap: pretty;
+}
+
+/* ---------- the listing ---------- */
+
+.pb-stage.d2 .rows {
+  margin-top: 1.375rem;
+  padding-block: 0.375rem;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+/* font-size lives HERE, not on .lb/.hd, so that --lbcol's ch unit resolves
+   against the size the labels actually render at. */
+.pb-stage.d2 .row {
+  display: grid;
+  grid-template-columns: var(--gutter) var(--iconcol) var(--lbcol) minmax(0, 1fr);
+  column-gap: var(--cg);
+  align-items: center;
+  padding: 0.375rem var(--px);
+  font-size: 0.875rem;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color var(--t) linear;
+}
+
+.pb-stage.d2 .mk {
+  justify-self: end;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--phos);
+  opacity: 0;
+  transition: opacity 70ms linear;  /* a TUI marker snaps in, it does not fade */
+}
+
+.pb-stage.d2 .ic {
+  display: grid;
+  place-items: center;
+  color: var(--ink-2);
+  transition: color var(--t) linear;
+}
+
+.pb-stage.d2 .ic svg {
+  display: block;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* Optical normalisation: equal mass, not equal box. Solid discs and filled
+   squares get pulled in; the thin Strava chevron and the Venmo letterform
+   get pushed out, so all six read at the same weight in the same cell. */
+.pb-stage.d2 .r-linkedin .ic svg { width: 0.8125rem; height: 0.8125rem; }
+.pb-stage.d2 .r-spotify  .ic svg { width: 0.8125rem; height: 0.8125rem; }
+.pb-stage.d2 .r-strava   .ic svg { width: 0.9375rem; height: 0.9375rem; }
+.pb-stage.d2 .r-venmo    .ic svg { width: 1rem;      height: 1rem; }
+
+/* Label and path share one size (inherited from .row) and one line-height so
+   their cells align; they are separated by colour only. */
+.pb-stage.d2 .lb {
+  line-height: 1.45;
+  color: var(--ink);
+  white-space: nowrap;
+  transition: color var(--t) linear;
+}
+
+.pb-stage.d2 .hd {
+  min-width: 0;
+  line-height: 1.45;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Hover lights the accent. Nothing moves. */
+.pb-stage.d2 .row:hover,
+.pb-stage.d2 .row:focus-visible {
+  background-color: var(--sel);
+}
+
+.pb-stage.d2 .row:hover .mk,
+.pb-stage.d2 .row:focus-visible .mk { opacity: 1; }
+
+.pb-stage.d2 .row:hover .ic,
+.pb-stage.d2 .row:focus-visible .ic { color: var(--phos); }
+
+.pb-stage.d2 .row:hover .lb,
+.pb-stage.d2 .row:focus-visible .lb { color: var(--phos); }
+
+/* Focus is the hover state plus a box — unmistakably different. */
+.pb-stage.d2 .row:focus-visible {
+  outline: 1px dashed var(--phos);
+  outline-offset: -4px;
+}
+
+.pb-stage.d2 .row:active {
+  background-color: var(--sel-active);
+}
+
+/* ---------- idle prompt, doubling as the footer ---------- */
+
+.pb-stage.d2 .foot {
+  display: grid;
+  grid-template-columns: var(--gutter) auto minmax(0, 1fr);
+  column-gap: var(--cg);
+  align-items: center;
+  margin-top: 1.25rem;
+  padding-inline: var(--px);
+}
+
+/* One character cell, drawn in CSS so it is exact in any font. The only
+   ornament on the page, and the only glow. */
+.pb-stage.d2 .caret {
+  justify-self: start;
+  width: 0.5rem;
+  height: 1rem;
+  border-radius: 1px;
+  background: var(--phos);
+  box-shadow: 0 0 8px rgba(167, 139, 255, 0.45);
+  animation: d2-caret 1.1s step-end infinite;
+}
+
+.pb-stage.d2 .yr {
+  justify-self: end;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+@keyframes d2-caret {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+
+/* ---------- narrow panels / narrow phones ---------- */
+
+/* --gutter deliberately does NOT shrink: "~ %" measures 23.5px and would have
+   only 0.5px of clearance in a 24px track, so any mono with a wider advance
+   would break the spine. Holding 1.625rem also keeps the spine metric stable. */
+@container (max-width: 420px) {
+  .pb-stage.d2 .term { --px: 1.125rem; --cg: 0.5rem; }
+  .pb-stage.d2 .nm { font-size: 1.1875rem; }
+  .pb-stage.d2 .row { font-size: 0.8125rem; }
+  .pb-stage.d2 .tag { font-size: 0.78125rem; }
+}
+
+/* Below ~360px the path no longer fits a column, so it becomes a second
+   output line under the label rather than being truncated. */
+@container (max-width: 360px) {
+  .pb-stage.d2 .tag { font-size: 0.75rem; }  /* keeps line 2 (33 chars) off a wrap */
+  /* Rows double in height when the path drops to its own line, so the vertical
+     scale steps down with them. Row padding is left alone — it is the tap target. */
+  .pb-stage.d2 .term { padding-block: 1.125rem; }
+  .pb-stage.d2 .rows { margin-top: 1.125rem; }
+  .pb-stage.d2 .foot { margin-top: 1rem; }
+  .pb-stage.d2 .row {
+    grid-template-columns: var(--gutter) var(--iconcol) minmax(0, 1fr);
+    align-items: start;
+    padding-block: 0.375rem;
+  }
+  .pb-stage.d2 .lb { grid-column: 3; line-height: 1.3; }
+  .pb-stage.d2 .hd {
+    grid-column: 3;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    overflow: visible;
+    text-overflow: clip;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-stage.d2 .caret { animation: none; opacity: 1; }
+  .pb-stage.d2 .row,
+  .pb-stage.d2 .mk,
+  .pb-stage.d2 .ic,
+  .pb-stage.d2 .lb { transition: none; }
+}
+/* ===== d5 · Kinetic Minimal ===== */
+/* ---------- d5 · Kinetic Minimal ---------- */
+
+.pb-stage.d5 {
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --bg-1: #fafafb;
+  --bg-2: #eeeef1;
+  --ink: #17171a;
+  --ink-2: #5c5c66;
+  --mark: #3f3f47;
+  --rule: #d7d7dd;
+  --accent: #5b3df5;
+  --glow: rgba(91, 61, 245, .20);
+
+  /* one curve, one duration, one step — chosen once and reused */
+  --dur: 460ms;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --step: 40ms;
+  --lead: 40ms;
+  --rule-dur: 620ms;
+
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 26rem;
+  padding: 2rem 1.75rem 1.25rem;
+  background: radial-gradient(135% 105% at 6% -8%, var(--bg-1), var(--bg-2));
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  .pb-stage.d5 {
+    --bg-1: #17171b;
+    --bg-2: #0e0e11;
+    --ink: #f2f2f5;
+    --ink-2: #9a9aa6;
+    --mark: #c4c4cc;
+    --rule: #26262c;
+    --accent: #a394ff;
+    --glow: rgba(163, 148, 255, .24);
+  }
+}
+
+:root[data-theme="dark"] .pb-stage.d5 {
+  --bg-1: #17171b;
+  --bg-2: #0e0e11;
+  --ink: #f2f2f5;
+  --ink-2: #9a9aa6;
+  --mark: #c4c4cc;
+  --rule: #26262c;
+  --accent: #a394ff;
+  --glow: rgba(163, 148, 255, .24);
+}
+
+:root[data-theme="light"] .pb-stage.d5 {
+  --bg-1: #fafafb;
+  --bg-2: #eeeef1;
+  --ink: #17171a;
+  --ink-2: #5c5c66;
+  --mark: #3f3f47;
+  --rule: #d7d7dd;
+  --accent: #5b3df5;
+  --glow: rgba(91, 61, 245, .20);
+}
+
+/* ---------- measure ---------- */
+
+.pb-stage.d5 .stage {
+  box-sizing: border-box;
+  align-self: center;
+  width: 100%;
+  max-width: 22rem;
+  margin-inline: auto;
+}
+
+/* ---------- identity ---------- */
+
+.pb-stage.d5 .name {
+  margin: 0;
+  font-size: 2.125rem;
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -.028em;
+  color: var(--ink);
+}
+
+.pb-stage.d5 .role {
+  margin: .4375rem 0 0;
+  font-family: var(--mono);
+  font-size: .75rem;
+  letter-spacing: .02em;
+  color: var(--ink-2);
+}
+
+/* mask-reveal: overflow box + a block child that slides up out of it.
+   padding-bottom carries the descenders; the 132% travel clears it. */
+.pb-stage.d5 .mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: .14em;
+}
+
+.pb-stage.d5 .role .mask {
+  padding-bottom: .16em;
+}
+
+.pb-stage.d5 .rise {
+  display: block;
+  animation: d5-rise var(--dur) var(--ease) both;
+  animation-delay: calc(var(--lead) + var(--i) * var(--step));
+}
+
+.pb-stage.d5 .role .rise {
+  line-height: 1.55;
+}
+
+/* ---------- hairline, with the accent leading it ---------- */
+
+.pb-stage.d5 .rule {
+  display: block;
+  width: 100%;
+  height: 1px;
+  margin: 1.125rem 0 .875rem;
+  background: linear-gradient(90deg, var(--accent) 0 2.5rem, var(--rule) 2.5rem 100%);
+  transform-origin: left center;
+  /* travels ~350px, so it earns the longest single duration on the page — but it
+     must still land before the last link, or it stops reading as a lead-in */
+  animation: d5-wipe var(--rule-dur) var(--ease) both;
+  animation-delay: calc(var(--lead) + var(--i) * var(--step));
+}
+
+/* ---------- the six ---------- */
+
+.pb-stage.d5 .links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.pb-stage.d5 .link {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: .8125rem;
+  width: fit-content;
+  padding: .4375rem 0;
+  border-radius: 4px;
+  color: inherit;
+  text-decoration: none;
+  animation: d5-lift var(--dur) var(--ease) both;
+  animation-delay: calc(var(--lead) + var(--i) * var(--step));
+}
+
+/* accent bloom, behind the mark. sits outside .mask so nothing clips it.
+   centred with margin-top so its only animated transform is scale. */
+.pb-stage.d5 .link::before {
+  content: "";
+  position: absolute;
+  left: -.625rem;
+  top: 50%;
+  margin-top: -1.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, var(--glow), transparent 70%);
+  opacity: 0;
+  transform: scale(.55);
+  transition: opacity 260ms var(--ease), transform 380ms var(--ease);
+  pointer-events: none;
+}
+
+/* fixed slot so every label starts on the same left edge.
+   flex, not grid: the Venmo V is deliberately wider than the slot, and an
+   over-sized grid track resolves to the start edge instead of the centre. */
+.pb-stage.d5 .mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--mark);
+  transition: transform 340ms var(--ease), color 200ms linear;
+}
+
+/* flex: none — otherwise flex-shrink claws the over-sized marks back to 20px */
+.pb-stage.d5 .mark svg {
+  display: block;
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* optical weight normalization — solid discs and slabs down, hairline marks up */
+.pb-stage.d5 .l-github .mark svg   { width: 1.0625rem; height: 1.0625rem; }
+.pb-stage.d5 .l-linkedin .mark svg { width: 1rem;      height: 1rem; }
+.pb-stage.d5 .l-email .mark svg    { width: 1.1875rem; height: 1.1875rem; }
+.pb-stage.d5 .l-strava .mark svg   { width: 1.25rem;   height: 1.25rem; }
+.pb-stage.d5 .l-spotify .mark svg  { width: 1.0625rem; height: 1.0625rem; }
+.pb-stage.d5 .l-venmo .mark svg    { width: 1.5625rem; height: 1.5625rem; }
+
+.pb-stage.d5 .label {
+  position: relative;
+  font-family: var(--mono);
+  font-size: .875rem;
+  font-weight: 400;
+  letter-spacing: .005em;
+  color: var(--ink);
+  transition: transform 340ms var(--ease);
+}
+
+/* the underline that wipes in — a true 1px hairline */
+.pb-stage.d5 .label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -.3em;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 320ms var(--ease);
+}
+
+/* four properties, three elements: mark drifts back, label steps forward,
+   underline wipes, bloom opens. nothing else moves. */
+.pb-stage.d5 .link:hover .mark,
+.pb-stage.d5 .link:focus-visible .mark {
+  color: var(--accent);
+  transform: translateX(-2px);
+}
+
+.pb-stage.d5 .link:hover .label,
+.pb-stage.d5 .link:focus-visible .label {
+  transform: translateX(4px);
+}
+
+.pb-stage.d5 .link:hover .label::after,
+.pb-stage.d5 .link:focus-visible .label::after {
+  transform: scaleX(1);
+}
+
+.pb-stage.d5 .link:hover::before,
+.pb-stage.d5 .link:focus-visible::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* focus gets everything hover gets, plus the ring that hover never shows.
+   offset stays at 3px: at 6px the 2px stroke lands exactly on the next row's
+   mark, because the rows are flush with no gap between them. */
+.pb-stage.d5 .link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ---------- footer ---------- */
+
+.pb-stage.d5 .foot {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 22rem;
+  margin: 1.375rem auto 0;
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  animation: d5-lift var(--dur) var(--ease) both;
+  animation-delay: calc(var(--lead) + var(--i) * var(--step));
+}
+
+/* ---------- motion ---------- */
+
+@keyframes d5-rise {
+  from { transform: translateY(132%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes d5-lift {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes d5-wipe {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* no hover to reveal the affordance, so leave a whisper of it visible — and
+   give :active the same four-part response a pointer gets, minus the drift */
+@media (hover: none) {
+  .pb-stage.d5 .label::after {
+    transform: scaleX(1);
+    opacity: .3;
+    transition: opacity 180ms linear;
+  }
+  .pb-stage.d5 .link:active .label::after,
+  .pb-stage.d5 .link:focus-visible .label::after { opacity: 1; }
+  .pb-stage.d5 .link:active .mark { color: var(--accent); }
+  .pb-stage.d5 .link:active .label { transform: translateX(4px); }
+  .pb-stage.d5 .link:active::before { opacity: 1; transform: scale(1); }
+}
+
+/* every hidden state lives inside a keyframe, so killing animation here
+   restores a complete, fully legible page with no motion at all */
+@media (prefers-reduced-motion: reduce) {
+  .pb-stage.d5 .rise,
+  .pb-stage.d5 .rule,
+  .pb-stage.d5 .link,
+  .pb-stage.d5 .foot {
+    animation: none;
+  }
+  .pb-stage.d5 .mark,
+  .pb-stage.d5 .label {
+    transition: color 160ms linear;
+  }
+  .pb-stage.d5 .link::before {
+    transform: scale(1);
+    transition: opacity 160ms linear;
+  }
+  .pb-stage.d5 .link:hover .mark,
+  .pb-stage.d5 .link:focus-visible .mark,
+  .pb-stage.d5 .link:hover .label,
+  .pb-stage.d5 .link:focus-visible .label,
+  .pb-stage.d5 .link:active .label {
+    transform: none;
+  }
+}
+
+/* the underline cannot wipe without motion, so it cross-fades instead.
+   gated to pointer devices: unguarded, this block also resets the resting
+   whisper above to opacity 0 and silently strips the touch affordance */
+@media (prefers-reduced-motion: reduce) and (hover: hover) {
+  .pb-stage.d5 .label::after {
+    transform: scaleX(1);
+    opacity: 0;
+    transition: opacity 160ms linear;
+  }
+  .pb-stage.d5 .link:hover .label::after,
+  .pb-stage.d5 .link:focus-visible .label::after {
+    opacity: 1;
+  }
+}
+
+/* narrow phones */
+@media (max-width: 430px) {
+  .pb-stage.d5 { padding: 1.75rem 1.25rem 1.125rem; }
+  .pb-stage.d5 .name { font-size: 1.75rem; }
+}
+/* ===== d3 · Depth and Grain ===== */
+/* ---------- tokens: one committed dark look ---------- */
+.pb-stage.d3 {
+  --ground: #09090c;
+  --ink: #f2f2f5;
+  --ink-2: #b6b6c2;
+  --ink-3: #a8a8b6;
+  --accent: #5b3df5;
+  --accent-lift: #a394ff;
+
+  --hair: color-mix(in oklab, var(--ink) 11%, transparent);
+  --fill: color-mix(in oklab, var(--ink) 4.5%, transparent);
+  --fill-hi: color-mix(in oklab, var(--ink) 7.5%, transparent);
+  --lip: color-mix(in oklab, var(--ink) 10%, transparent);
+  --lip-hi: color-mix(in oklab, var(--ink) 17%, transparent);
+  --drop: 0 1px 2px rgb(0 0 0 / 0.34);
+
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 25rem;
+  background-color: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- layer 1: the bloom. one light source, upper left, off-frame.
+   Eight stops approximate a gaussian falloff: a 3-stop gradient shows a
+   visible edge and reads as a blob, which is the usual tell. ---------- */
+.pb-stage.d3 .bloom {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    115% 85% at 14% -8%,
+    color-mix(in oklab, var(--accent) 34%, transparent) 0%,
+    color-mix(in oklab, var(--accent) 30%, transparent) 12%,
+    color-mix(in oklab, var(--accent) 23%, transparent) 26%,
+    color-mix(in oklab, var(--accent) 16%, transparent) 40%,
+    color-mix(in oklab, var(--accent) 10%, transparent) 54%,
+    color-mix(in oklab, var(--accent) 5.5%, transparent) 68%,
+    color-mix(in oklab, var(--accent) 2.5%, transparent) 82%,
+    transparent 100%
+  );
+  animation: d3-bloom 1500ms cubic-bezier(0.22, 0.7, 0.28, 1) backwards;
+}
+
+/* ---------- layer 3: the grain, over everything including the tiles.
+   feTurbulence writes noise into the ALPHA channel (mean a=0.5) over a
+   linearRGB 0.5 grey, which converts to ~#bb, so this is additive light and
+   not a grey veil. Measured off-screen: mean contribution +4.7/255, peak
+   +9.4/255 at opacity 0.05. Also measured: the 128px background tile
+   stitches seamlessly despite the filter region's default 10% bleed —
+   cross-tile column delta 28.4 vs 31.7 for an interior pair — so do not
+   "fix" this by pinning filter x/y/width/height.
+   plus-lighter is the only blend that registers on a near-black ground:
+   overlay and soft-light both collapse to ~0.4/255 here and do literally
+   nothing. Unsupported plus-lighter falls back to normal, within 1/255. */
+.pb-stage.d3 .grain {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: plus-lighter;
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch' seed='7'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+/* ---------- layer 2: the content ---------- */
+.pb-stage.d3 .stage {
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  container-type: inline-size;
+  flex: 1 1 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(1.5rem, 6.25%, 2.5rem);
+}
+
+/* ---------- identity ---------- */
+.pb-stage.d3 .head {
+  margin: 0 0 1.5rem;
+}
+
+.pb-stage.d3 .mark {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+}
+
+/* the halo is a 3px spread, so the flex gap has to carry it: at 0.4375rem
+   the visible gap between glow and the "g" was 4px, not 7px */
+.pb-stage.d3 .dot {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-lift);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 24%, transparent);
+}
+
+/* static first value so an engine without container units still sizes the
+   h1. The fluid term is calc()-based on purpose: a bare 6.6cqw sat on the
+   clamp floor from 280px all the way to 440px, so the ramp was dead across
+   most of the panel range. Measured now: 26 / 27.5 / 29.8 / 34px at
+   320 / 380 / 440 / 560px. */
+.pb-stage.d3 .name {
+  margin: 0;
+  font-size: 1.75rem;
+  font-size: clamp(1.625rem, 0.85rem + 4.2cqw, 2.125rem);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.026em;
+  color: var(--ink);
+}
+
+.pb-stage.d3 .lede {
+  max-width: 30ch;
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  letter-spacing: -0.003em;
+  color: var(--ink-2);
+  text-wrap: balance;
+}
+
+/* ---------- the six ---------- */
+.pb-stage.d3 .nav {
+  margin: 0;
+  max-width: 34rem;
+}
+
+.pb-stage.d3 .grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pb-stage.d3 .grid > li {
+  min-width: 0;
+  display: flex;
+}
+
+/* two columns hold cleanly down to a 142px tile (measured: no label wrap,
+   no sub-label ellipsis). 17.5rem rather than 17rem because the stage's
+   content box is exactly 17.000rem at a 320px panel — the old threshold sat
+   on the boundary, where one stray pixel flipped the layout. */
+@container (max-width: 17.5rem) {
+  .pb-stage.d3 .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pb-stage.d3 .tile {
+  --g: 1rem;
+  box-sizing: border-box;
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem 0.5rem 0.5625rem;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background-color: var(--fill);
+  -webkit-backdrop-filter: blur(6px) saturate(135%);
+  backdrop-filter: blur(6px) saturate(135%);
+  box-shadow:
+    inset 0 1px 0 var(--lip),
+    var(--drop);
+  color: var(--ink-2);
+  text-decoration: none;
+  animation: d3-wipe 560ms var(--ease) backwards;
+  animation-delay: calc(90ms + var(--i, 0) * 48ms);
+  transition:
+    background-color 220ms var(--ease),
+    border-color 220ms var(--ease),
+    box-shadow 260ms var(--ease);
+}
+
+/* optical normalisation: each mark sized to match apparent weight, not box.
+   Rendered widths measured at 15.7 / 15.4 / 16.3 / 18.9 / 16.3 / 19.8px. */
+.pb-stage.d3 .t-github { --g: 0.98rem }
+.pb-stage.d3 .t-linkedin { --g: 0.96rem }
+.pb-stage.d3 .t-email { --g: 1.02rem }
+.pb-stage.d3 .t-strava { --g: 1.18rem }
+.pb-stage.d3 .t-spotify { --g: 1.02rem }
+.pb-stage.d3 .t-venmo { --g: 1.24rem }
+
+.pb-stage.d3 .glyph {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--ink-2);
+  transition: color 160ms linear;
+}
+
+.pb-stage.d3 .glyph svg {
+  display: block;
+  width: var(--g);
+  height: var(--g);
+  fill: currentColor;
+}
+
+.pb-stage.d3 .txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* deliberately not clamped to one line: if the label ever outgrows the tile,
+   wrapping the link's own name is a better failure than an ellipsis. The sub
+   below is throwaway voice, so that one truncates instead. */
+.pb-stage.d3 .label {
+  font-size: 0.8125rem;
+  font-weight: 550;
+  line-height: 1.25;
+  letter-spacing: -0.006em;
+  color: var(--ink);
+}
+
+.pb-stage.d3 .sub {
+  overflow: hidden;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  letter-spacing: 0.004em;
+  color: var(--ink-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 160ms linear;
+}
+
+.pb-stage.d3 .tile:hover,
+.pb-stage.d3 .tile:focus-visible {
+  background-color: var(--fill-hi);
+  border-color: color-mix(in oklab, var(--accent) 62%, var(--hair));
+  box-shadow:
+    inset 0 1px 0 var(--lip-hi),
+    var(--drop),
+    0 0 22px -8px color-mix(in oklab, var(--accent) 72%, transparent);
+}
+
+.pb-stage.d3 .tile:hover .glyph,
+.pb-stage.d3 .tile:focus-visible .glyph {
+  color: var(--ink);
+}
+
+.pb-stage.d3 .tile:hover .sub,
+.pb-stage.d3 .tile:focus-visible .sub {
+  color: var(--ink-2);
+}
+
+.pb-stage.d3 .tile:focus-visible {
+  outline: 2px solid var(--accent-lift);
+  outline-offset: 3px;
+  /* an in-flight mask clips the outline, so a tile focused during the
+     reveal drops its animation and snaps to the finished state */
+  animation: none;
+}
+
+/* five of the six open a new tab, so a tapped tile is still on screen when
+   the user comes back: on a coarse pointer the hover lift must not stick.
+   :focus-visible is untouched, so keyboard focus still lifts. */
+@media (hover: none) {
+  .pb-stage.d3 .tile:hover {
+    background-color: var(--fill);
+    border-color: var(--hair);
+    box-shadow:
+      inset 0 1px 0 var(--lip),
+      var(--drop);
+  }
+  .pb-stage.d3 .tile:hover .glyph {
+    color: var(--ink-2);
+  }
+  .pb-stage.d3 .tile:hover .sub {
+    color: var(--ink-3);
+  }
+}
+
+.pb-stage.d3 .foot {
+  margin: 1.25rem 0 0;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.015em;
+  color: var(--ink-3);
+}
+
+/* ---------- motion ---------- */
+.pb-stage.d3 .mark,
+.pb-stage.d3 .name,
+.pb-stage.d3 .lede {
+  animation: d3-wipe 560ms var(--ease) backwards;
+  animation-delay: calc(90ms + var(--i, 0) * 48ms);
+}
+
+@keyframes d3-wipe {
+  from {
+    opacity: 0;
+    -webkit-mask-image: linear-gradient(97deg, transparent 0 30%, #000 62%, #000 100%);
+    mask-image: linear-gradient(97deg, transparent 0 30%, #000 62%, #000 100%);
+    -webkit-mask-size: 320% 100%;
+    mask-size: 320% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: 0% 0%;
+    mask-position: 0% 0%;
+  }
+  to {
+    opacity: 1;
+    -webkit-mask-image: linear-gradient(97deg, transparent 0 30%, #000 62%, #000 100%);
+    mask-image: linear-gradient(97deg, transparent 0 30%, #000 62%, #000 100%);
+    -webkit-mask-size: 320% 100%;
+    mask-size: 320% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: 100% 0%;
+    mask-position: 100% 0%;
+  }
+}
+
+@keyframes d3-bloom {
+  from { opacity: 0; transform: scale(0.88) }
+  to { opacity: 1; transform: none }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-stage.d3 .bloom,
+  .pb-stage.d3 .mark,
+  .pb-stage.d3 .name,
+  .pb-stage.d3 .lede,
+  .pb-stage.d3 .tile {
+    animation: none;
+  }
+  .pb-stage.d3 .bloom {
+    transform: none;
+  }
+  .pb-stage.d3 .tile,
+  .pb-stage.d3 .glyph,
+  .pb-stage.d3 .sub {
+    transition: none;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="pb">
+  <header class="pb-head">
+    <p class="pb-eyebrow">goobta.io &middot; redesign &middot; direction review</p>
+    <h1 class="pb-h1">Five directions for a six-link front door</h1>
+    <p class="pb-lede">Each panel below is <strong>live rendered CSS</strong>, not a mockup &mdash; the same
+      markup that would ship. Five designers worked independently from the same brief and never saw each
+      other&rsquo;s work; a design engineer then re-derived every contrast ratio by hand and returned
+      corrected code; three judges scored the set through separate lenses. <strong>Hit Replay</strong> on any
+      panel to watch its load sequence.</p>
+    <ul class="pb-chips">
+      <li>static astro</li><li>zero-js on the real site</li><li>css-only motion</li>
+      <li>wcag aa verified</li><li>light + dark</li><li>13 agents</li>
+    </ul>
+  </header>
+
+  
+<article class="pb-spec pb-spec--top" id="d1">
+  <div class="pb-spec__bar">
+    <span class="pb-spec__rank">D1</span>
+    <h2 class="pb-spec__name">The Index Page</h2>
+    <dl class="pb-scores"><div class="pb-score"><dt>taste</dt><dd>8.5</dd></div><div class="pb-score"><dt>fit</dt><dd>8</dd></div><div class="pb-score"><dt>craft</dt><dd>8</dd></div><div class="pb-score pb-score--avg"><dt>avg</dt><dd>8.17</dd></div></dl>
+    <span class="pb-badge">Unanimous pick &middot; 3/3 judges</span>
+  </div>
+
+  <p class="pb-concept">A flush-left masthead — name set very large and very tight, a two-line deck beneath it — sitting above a six-row typographic index ruled with true 1px hairlines. No tiles, no shadows, no motion beyond a 1px chevron that steps 3px right; the only color in the whole page is a single accent period after the name.</p>
+
+  <div class="pb-body">
+    <div class="pb-stagewrap">
+      <div class="pb-stage d1" data-stage="d1" role="img" aria-label="Design preview: The Index Page"></div>
+      <div class="pb-stagefoot">
+        <button class="pb-replay" type="button" data-replay="d1">Replay load animation</button>
+        <span class="pb-dim">preview at 480&times;440</span>
+      </div>
+    </div>
+
+    <div class="pb-dossier">
+      <dl class="pb-facts">
+        <dt>Tagline</dt><dd>Software and AI engineering. Cyclist, runner, heavy listener.</dd>
+        <dt>Typeface</dt><dd>What I actually want is Söhne (Klim) — Buch for the deck and index labels, Kräftig for the name.</dd>
+        <dt>Themes</dt><dd>Designed for light and dark.</dd>
+      </dl>
+      <ul class="pb-swatches"><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#f5f5f3"></span><span class="pb-sw__c" style="background:#0e0e10"></span></span><code class="pb-sw__tok">--paper</code><span class="pb-sw__role">Flat page ground. The radial vignette is deliberately removed — editorial pages are printed on paper, not lit from behind.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#16161a"></span><span class="pb-sw__c" style="background:#f4f4f2"></span></span><code class="pb-sw__tok">--ink</code><span class="pb-sw__role">Name and the six link labels. Measured 16.53:1 light / 17.51:1 dark (the direction originally reported 16.9 / 17.6 — corrected).</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#55555c"></span><span class="pb-sw__c" style="background:#9e9ea6"></span></span><code class="pb-sw__tok">--ink-soft</code><span class="pb-sw__role">Deck, annotation column, icons, colophon. Replaces the failing --muted: measured 6.77:1 light / 7.25:1 dark, so it passes AA even at 11px.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:rgba(22,22,26,0.14)"></span><span class="pb-sw__c" style="background:rgba(244,244,242,0.14)"></span></span><code class="pb-sw__tok">--rule</code><span class="pb-sw__role">Interior hairlines between index rows. Always exactly 1px, never scaled. Decorative separators at 1.33:1 light / 1.42:1 dark — deliberately below 3:1 and exempt, because no state or information depends on them.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:rgba(22,22,26,0.32)"></span><span class="pb-sw__c" style="background:rgba(244,244,242,0.30)"></span></span><code class="pb-sw__tok">--rule-strong</code><span class="pb-sw__role">The opening rule above the index — same 1px, more presence, so the block has a top edge. 2.03:1 light / 2.51:1 dark; decorative, as above.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#4b31d9"></span><span class="pb-sw__c" style="background:#a99bff"></span></span><code class="pb-sw__tok">--accent</code><span class="pb-sw__role">The only color: the period after the name, the hovered row&#x27;s rule, the chevron on hover/focus, the focus ring. Retuned from #5b3df5; measured 7.02:1 light / 8.10:1 dark (originally reported 6.97 / 7.76 — corrected).</span></li></ul>
+      <div class="pb-fixes"><p class="pb-fixes__h">Applied before you see it <span>3 verified bug fixes</span></p><ul><li>Removed <code>white-space: nowrap</code> from the colophon. The harden pass added it to protect the vertical rhythm, but at <code>html{font-size:32px}</code> it turned a graceful wrap into 64px of horizontal document overflow — a WCAG 1.4.10 failure. Flagged by the craft judge.</li><li>Added <code>flex-wrap: wrap</code> to the colophon so it wraps instead of overflowing.</li><li>Added <code>margin-inline: auto</code> to <code>.page</code>. It was pinning to the left edge at any viewport wider than 544px.</li></ul></div>
+      <details class="pb-more">
+        <summary>Judges&rsquo; read, risks &amp; engineering notes</summary>
+        <div class="pb-more__in">
+          <p class="pb-verdict"><span class="pb-lens">taste</span> The only direction whose surface is not a period style, whose phone layout cannot break, and where a seventh link is invisible. It is also the least exciting, which is the correct trade for a permanent front door. Top pick.</p><p class="pb-verdict"><span class="pb-lens">fit</span> The only one of the five that renders as a finished, closed object rather than a layout containing content. Wins on measurable typographic craft, not on concept novelty — and it ships one glaring uncorrected glyph that its own premise cannot afford.</p><p class="pb-verdict"><span class="pb-lens">craft</span> The cleanest, most idiomatic CSS in the set and the most robust by default, because it wins by not spending: zero animation, zero url(), zero backdrop-filter, zero container queries, six tokens that map 1:1 onto Base.astro&#x27;s existing --bg/--fg/--muted/--accent shape. Two real layout bugs, both one-liners. Its weakness is conceptual, not technical: it answers the accent/favicon brief least of any direction.</p>
+          <h4>Strengths</h4><ul class="pb-list"><li>Longevity is structural, not stylistic. Hairline-ruled type lists, flush-left masthead, grotesque-against-mono: this idiom is 60 years old, not 3. Nothing in the CSS is a 2026 gesture — no bloom, no grain, no backdrop-filter, no reveal keyframes (it has zero @keyframes at all). Compare d3, which names its own surface as &#x27;the most-imitated look on the internet right now&#x27;.</li><li>Absorbs a seventh link with literally no design decision. `.index` is border-top plus six `.row` each with border-bottom; a seventh row adds 36.7px to a 431.7px stack and looks identical. Contrast d4, where item 7 hits `grid-auto-flow: column` against only two explicit columns and spawns an implicit third `auto` column — a visible hole in a hard-ruled frame.</li><li>Measured: indexR / rowR / markR / colophonR all resolve to 441px, and all six labelL to 56px, with nameL at 28px. Every element lands on one of exactly two vertical edges. It is the only direction whose composition closes into a rectangle instead of trailing off.</li><li>Real four-tier scale — 40 / 15 / 13 / 11px, a 3.08x display-to-label ratio. Actual hierarchy, not four sizes of sibling. Compare d2&#x27;s 1.57x.</li><li>Zero motion at load. Nothing is gated behind an animation, so there is no fill-mode, no stagger, no reveal, and nothing that can fail to appear. Of the five this is the only direction where &#x27;what if animations never run&#x27; is not even a question.</li><li>Best rem-scaling behaviour of the type-led directions: at html{font-size:32px} in a 390px box the name wraps to two lines, the deck reflows, rows and hairlines scale, nothing truncates. Verified.</li></ul>
+          <h4>Weaknesses</h4><ul class="pb-list"><li>The favicon relationship is asserted rather than felt. At rest, on a phone, with no hover, the entire use of --accent is one period glyph after the name. I opened public/favicon.svg: it is a #5b3df5 rounded square with a white bold `g`. d4 puts that exact object on the page; d1 puts a full stop. This is d1&#x27;s thinnest seam and the one thing I would graft in.</li><li>At 0.875rem the icons stop being logos and become texture. Verified against the real assets: Strava is a two-chevron path and Venmo is an SVG `&lt;text&gt;` node — neither survives 14px, and `scale(1.14)`/`scale(1.06)` does not rescue identifiability, only weight. The words carry 100% of recognition, so a stranger scanning for a familiar coloured mark finds nothing to lock onto.</li><li>Does not fix the Venmo mark. Verified in render: a Georgia bold-italic V sits among five geometric glyphs. On a page whose entire argument is typographic control, this is the loudest error on the screen, and it is in the deliverable while d4 fixed the same asset in one CSS rule.</li><li>13px uppercase at 0.115em tracking + a right-aligned mono column + 1px hairlines is one edit away from an API reference table. Only the 40px masthead holds it on the right side of that line, and the direction knows it.</li><li>At html{font-size:32px} the colophon spills 64px outside its container and forces a document horizontal scrollbar: .colophon box is 293px, needs 413px, .copy&#x27;s right edge lands at 464 vs a container right of 400. Cause is precisely the QA-added `white-space: nowrap` on .site/.copy, which converted a graceful wrap into an overflow. `flex-wrap: wrap` fixes it.</li><li>No horizontal centering. .page is `flex:1; max-width:34rem` inside a `display:flex` SCOPE with no justify-content and no margin-inline:auto, so at any viewport wider than 544px the whole composition pins to the left edge — confirmed by screenshot at 2056px. One-line fix, but it is the default state on every desktop.</li></ul>
+          <h4>How it fails or ages</h4><ul class="pb-list"><li>A type-only page is only as good as its typeface. On the system stack it renders as SF on macOS, Roboto on Android, Segoe on Windows — and -0.038em tracking that reads confident on SF reads cramped on Roboto. Without the self-hosted woff2 this direction is meaningfully worse, not slightly worse.</li><li>Uppercase labels plus a right-aligned monospace column plus hairline rules is one wrong step away from looking like a settings screen or an API reference table. The thing holding it on the right side of that line is the 40px name and the 221px of index sitting under a much larger void — if a future edit adds a seventh row or a second paragraph, it tips.</li><li>There is no warmth, no image, no color beyond a single period. Someone arriving expecting personality may read it as cold or unfinished in a different way than the current page is unfinished. This is a bet that confidence reads better than charm, and it is a bet.</li><li>Swiss-editorial-plus-mono-metadata is itself a strong 2020s portfolio idiom. It will age better than embossed glyphs, but in five years it may read as &quot;that template every engineer-designer used,&quot; and the very restraint that makes it defensible also makes it unmemorable next to a direction with a real idea in it.</li><li>The annotation column is copy, and copy is a liability. &quot;code&quot;, &quot;settle up&quot;, &quot;listening&quot; are doing real work — if they drift toward cute or filler, that column becomes the weakest thing on the page and there is nowhere for the eye to go instead.</li></ul>
+          <h4>Porting to Astro</h4><p class="pb-note">Base.astro token surgery. Collapse --bg-1/--bg-2 into a single --paper (#f5f5f3 / #0e0e10) and delete the radial-gradient from `body` — `background: var(--paper)` only. The vignette is what makes the current page feel like a splash screen; flat ground is the whole premise here. Keep --fg but rename to --ink. Delete --muted outright and replace with --ink-soft #55555c / #9e9ea6 — every use site in this design measures 6.77:1 or better. (Verified the diagnosis: --muted #8a8a90 is 3.12:1 over --bg-1 #f4f4f5 and 2.51:1 over --bg-2 #dcdce0; dark --muted #6b6b72 is 3.41:1 over #16161a and 3.74:1 over #0a0a0c. All four fail 4.5:1.) Collapse --icon/--icon-hover into --ink-soft with hover promoting to --ink, so there is no separate icon color system. Retune --accent from #5b3df5 to #4b31d9 (light) / #a99bff (dark): same hue family as the favicon. Be precise about why — #5b3df5 measures 5.57:1 ove…</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</article>
+<article class="pb-spec" id="d4">
+  <div class="pb-spec__bar">
+    <span class="pb-spec__rank">D4</span>
+    <h2 class="pb-spec__name">Structural Grid</h2>
+    <dl class="pb-scores"><div class="pb-score"><dt>taste</dt><dd>7.5</dd></div><div class="pb-score"><dt>fit</dt><dd>7</dd></div><div class="pb-score"><dt>craft</dt><dd>5</dd></div><div class="pb-score pb-score--avg"><dt>avg</dt><dd>6.5</dd></div></dl>
+    
+  </div>
+
+  <p class="pb-concept">A hard 1px grid divides the page into an explicit, deliberately uneven set of cells: the name owns the biggest one, each link owns its own numbered one, and a full-height saturated violet spine runs corner to corner down the right edge carrying the &quot;g&quot; from the favicon. The structure is the only ornament — no radius, no shadow, no movement.</p>
+
+  <div class="pb-body">
+    <div class="pb-stagewrap">
+      <div class="pb-stage d4" data-stage="d4" role="img" aria-label="Design preview: Structural Grid"></div>
+      <div class="pb-stagefoot">
+        <button class="pb-replay" type="button" data-replay="d4">Replay load animation</button>
+        <span class="pb-dim">preview at 480&times;440</span>
+      </div>
+    </div>
+
+    <div class="pb-dossier">
+      <dl class="pb-facts">
+        <dt>Tagline</dt><dd>Software &amp; AI engineering / Runs, rides, listens</dd>
+        <dt>Typeface</dt><dd>ABC Diatype for the name and labels, ABC Diatype Mono for every metadata line.</dd>
+        <dt>Themes</dt><dd>Designed for light and dark.</dd>
+      </dl>
+      <ul class="pb-swatches"><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#f5f4f1"></span><span class="pb-sw__c" style="background:#0e0e11"></span></span><code class="pb-sw__tok">--ground</code><span class="pb-sw__role">Cell fill. Warm paper in light so the violet reads as print ink rather than UI chrome; near-black in dark.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#101012"></span><span class="pb-sw__c" style="background:#f2f1ee"></span></span><code class="pb-sw__tok">--ink</code><span class="pb-sw__role">Name, labels, glyphs. Also the hover fill, since hover swaps ground and ink literally. 17.3:1 light / 17.1:1 dark on ground.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#4a4a50"></span><span class="pb-sw__c" style="background:#a8a8b0"></span></span><code class="pb-sw__tok">--ink-2</code><span class="pb-sw__role">Tagline and footer mono. 8.00:1 light / 8.16:1 dark. Replaces --muted, which failed AA in both themes.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#5f5f67"></span><span class="pb-sw__c" style="background:#8e8e97"></span></span><code class="pb-sw__tok">--ink-3</code><span class="pb-sw__role">Ordinals 01-06, year, separator. Quietest tier but still 5.75:1 / 5.93:1 at 10px.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#a5a5ad"></span><span class="pb-sw__c" style="background:#5f5f67"></span></span><code class="pb-sw__tok">--ink-3-inv</code><span class="pb-sw__role">The ordinal inside an inverted cell. Verified: without this token the number lands at exactly 3.00:1 (light) / 2.88:1 (dark) on the flipped ground - the one place the inversion would have broken AA. With it: 7.77:1 / 5.60:1.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#222226"></span><span class="pb-sw__c" style="background:#62626b"></span></span><code class="pb-sw__tok">--rule</code><span class="pb-sw__role">Every hairline, and the frame. Near-ink in light (14.4:1). Dark was #48484f at 2.13:1 - below the 3:1 non-text minimum for the boundaries that delimit the link cells, and visibly gone in render; lifted to #62626b for 3.19:1 so the structure still reads as the ornament while staying two tiers quieter than --ink-3.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#5b3df5"></span><span class="pb-sw__c" style="background:#6a4cfb"></span></span><code class="pb-sw__tok">--accent</code><span class="pb-sw__role">The spine fill and the focus fill. Light is the existing brand violet untouched (6.12:1 against white type); dark is brightened to 5.20:1 against white type while holding 3.71:1 against the ground.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#ffffff"></span><span class="pb-sw__c" style="background:#ffffff"></span></span><code class="pb-sw__tok">--on-accent</code><span class="pb-sw__role">Type and focus ring on violet. White in both themes so the mark stays one constant object.</span></li></ul>
+      
+      <details class="pb-more">
+        <summary>Judges&rsquo; read, risks &amp; engineering notes</summary>
+        <div class="pb-more__in">
+          <p class="pb-verdict"><span class="pb-lens">taste</span> Wins the two-second identity read outright and for a verifiable reason, then loses on the two axes that decide a permanent site: it cannot absorb a seventh link without visibly breaking, and it cannot hold a bio at all.</p><p class="pb-verdict"><span class="pb-lens">fit</span> The only entry with a real compositional idea rather than a good layout, and the only one that actually fixed the Venmo glyph. Undercut by a self-inflicted ordering error and a secondary tier with no internal hierarchy.</p><p class="pb-verdict"><span class="pb-lens">craft</span> The best ideas in the set sitting on the least robust implementation. It is the only direction that actually fixes the Venmo mark, actually uses the favicon colour, and actually handles Windows High Contrast — and it is also the only direction that destroys its own content at a 2x user font size. Its accessibility is half genuine, half decorative: it handles the rare adaptation and fails the common one.</p>
+          <h4>Strengths</h4><ul class="pb-list"><li>Best favicon coherence in the set, and it is not a claim — it is the same object. public/favicon.svg is `rect fill=#5b3df5` plus `text fill=#ffffff` bold `g`. `.mark` is `background: var(--accent)` = #5b3df5 with `.mark-glyph` = `g` at `font-weight: 800` in `--on-accent` #ffffff. Tab icon and page carry one identical mark. Nobody else does this; d1 derives a period, d3 derives a bloom.</li><li>The composition underneath is the durable part: asymmetric `grid-template-rows: minmax(7.5rem, 1.05fr) auto minmax(11rem, 1fr) auto`, ordinals as an index, mono metadata. That is Müller-Brockmann, and it would survive a complete retune of the accent.</li><li>Genuine composition, measured: 109px of void above a bottom-flush name inside a 184.8px cell, with the &#x27;g&#x27; at the top of a 15.3%-wide spine. That diagonal across an empty middle is negative space doing structural work — nothing else here attempts it.</li><li>The accent is committed rather than sprinkled. A flat violet field 15% of the panel wide is a decision you cannot quietly walk back, and it answers the unused-accent brief more completely than a period does.</li><li>The only direction that genuinely fixes the Venmo mark instead of enlarging the serif V. SVG presentation attributes lose to author CSS, so `.c-venmo .glyph svg text { font-family: var(--sans); font-style: normal }` pulls it into the display face — and it deliberately leaves font-size alone so the asset&#x27;s own centring survives. I confirmed visually in the 470px render that d4&#x27;s V is upright and sans while d1, d2, d3 and d5 all still show Georgia italic. This is the brief&#x27;s &#x27;nothing normalizes them&#x27;, actually answered.</li><li>Strongest answer to the unused-accent/orphaned-favicon problem by a wide margin: the literal favicon hex #5b3df5 at full saturation across a whole vertical band, plus a full-cell accent fill on focus. Every other direction either retunes the hue away from the favicon or confines it to hover states.</li></ul>
+          <h4>Weaknesses</h4><ul class="pb-list"><li>Cannot take a seventh link. `.links` is `grid-template-columns: 1.18fr 1fr; grid-template-rows: repeat(3, 1fr); grid-auto-flow: column`. Item 7 creates an implicit third column at `auto` width, so the whole frame goes lopsided with one item alone in a narrow trailing column — and in a design where every cell is outlined, that hole is the most visible thing on the page. Going to 2x4 instead leaves a naked empty ruled cell. Either way it is a re-derivation, not an edit.</li><li>Cannot take a bio at all. `.role` is 0.625rem uppercase mono with 0.085em tracking — it physically cannot hold a sentence — and `grid-template-areas` is locked to four rows against two `minmax()` floors. A fifth area means re-tuning 7.5rem/1.05fr and 11rem/1fr and re-checking the 25rem floor. This is the definition of collapsing under a future edit.</li><li>Measured: ordinals in visual order are 01, 04, 02, 05, 03, 06. Numbering an index and then flowing it column-major defeats the numbering, and the ordinals are the device the direction leans on for its work/personal grouping. Either go row-major or drop the numbers.</li><li>cellWidths measure 197 vs 167px. The 1.18fr split is too subtle to read as intentional and too large to disappear — it reads as a grid that is slightly wrong.</li><li>At html{font-size:32px} the design destroys its own content. Measured: .name at 64px in a 202px cell, &#x27;ANKUR&#x27; needs 213px and has 146px, &#x27;GUPTA&#x27; needs 203px and has 146px — the name renders as &#x27;ANKU▌GUPT▌&#x27;, sliced by overflow:hidden. Worse, all six .label elements collapse to clientWidth 0 while needing 66–106px, so the page becomes six unidentifiable icons plus ordinals. Root cause is the fixed 4.5rem spine plus the 2rem clamp floor, and the two QA-added &#x27;hardening&#x27; edits (overflow:hidden on .name, min-width:0/overflow:hidden on .label) are exactly what convert overflow into silent content destruction. This is the most common low-vision adaptation there is, and it is the failure mode in the direction with otherwise the most genuine a11y work.</li><li>At desktop proportions the composition collapses. No max-width on .frame, 10cqi maxes out at 3rem, and labels/glyphs/ordinals are fixed px. Measured at 2056x1147: name cell 1953x536 with 438px of dead space above 48px type; six link cells at 1057x170px each holding a 20px glyph and an 11px label, an ink fill of roughly 0.2%. Unlike d1&#x27;s and d3&#x27;s missing-centering (a one-line fix) this needs a max-width AND a type ramp AND row caps — the fixed-proportion grid is the concept.</li></ul>
+          <h4>How it fails or ages</h4><ul class="pb-list"><li>The Venmo mark is still the weakest element, even after the CSS normalisation. The asset is an SVG &lt;text&gt; node, so the V is now whatever grotesque the OS resolves from the sans stack rather than a drawn glyph - it will differ slightly between macOS, Windows and Android, and it is the one mark in the set whose weight I cannot tune independently of its width. It needs replacing with a real path before launch; the CSS rule is a stopgap that stops it looking like a mistake, not a finished mark.</li><li>Neo-brutalism is a datable style. Hard 1px rules plus one saturated violet reads distinctly 2022-2026 and will age faster than a quieter typographic direction. The composition underneath (asymmetric grid, uneven row rhythm, mono metadata) would survive a retune of the accent, but the surface will not stay current for a decade.</li><li>The design leans hard on the purple - the spine is now roughly 17% of the panel, and running it corner to corner made it more dominant, not less. This is deliberate, since it is the fix for an unused --accent and an unrelated favicon, but it is not a sprinkle that can be quietly removed. If Ankur does not love #5b3df5, this direction has to be re-pitched around a different colour rather than toned down.</li><li>Lifting the dark --rule from #48484f to #62626b was required to clear 3:1, and it does make the dark theme read a little more like a wireframe than the near-invisible original did. That is the correct trade for a direction whose entire ornament is the hairline, but it is a visible change in character between the two themes: light reads as ink on paper, dark reads as drawn structure.</li><li>The all-caps name uses text-transform so the DOM keeps &#x27;Ankur Gupta&#x27;, but Chrome exposes the transformed string to the accessibility tree and some screen readers spell short all-caps words letter by letter. Most AT reads the raw text and is fine; it is a small, real, unfixable-in-CSS wart.</li></ul>
+          <h4>Porting to Astro</h4><p class="pb-note">BASE.ASTRO TOKENS. Replace the :root block wholesale with the eight tokens above and delete --bg-1, --bg-2, --fg, --muted, --icon, --icon-hover. Three of those are current bugs: --muted (#8a8a90 light / #6b6b72 dark) fails AA in both themes and is superseded by --ink-2 (8.00:1 / 8.16:1) and --ink-3 (5.75:1 / 5.93:1); --icon/--icon-hover become unnecessary because cells own their colour and SVGs inherit through fill: currentColor. Keep `color-scheme: light dark`. The body radial-gradient goes away — this direction needs a flat ground for the hairlines to read as drawn rules rather than sitting on a vignette; set `background: var(--ground)`. Keep the existing `* { box-sizing: border-box }`; my CSS re-declares box-sizing per element only because the preview contract forbids a universal selector, and those lines can be dropped in the real build.
+
+INDEX.ASTRO. The `links` object stays, but fl…</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</article>
+<article class="pb-spec" id="d2">
+  <div class="pb-spec__bar">
+    <span class="pb-spec__rank">D2</span>
+    <h2 class="pb-spec__name">Prompt Line</h2>
+    <dl class="pb-scores"><div class="pb-score"><dt>taste</dt><dd>4.5</dd></div><div class="pb-score"><dt>fit</dt><dd>6</dd></div><div class="pb-score"><dt>craft</dt><dd>7</dd></div><div class="pb-score pb-score--avg"><dt>avg</dt><dd>5.83</dd></div></dl>
+    
+  </div>
+
+  <p class="pb-concept">A single shell transcript: a prompt, the name run as the command, its two lines of output, a six-entry listing on a strict monospace grid, and an idle prompt with a blinking block caret. No window chrome, no ASCII art, no fake commands — the terminal reading comes entirely from the type, the grid, and one phosphor accent.</p>
+
+  <div class="pb-body">
+    <div class="pb-stagewrap">
+      <div class="pb-stage d2" data-stage="d2" role="img" aria-label="Design preview: Prompt Line"></div>
+      <div class="pb-stagefoot">
+        <button class="pb-replay" type="button" data-replay="d2">Replay load animation</button>
+        <span class="pb-dim">preview at 480&times;440</span>
+      </div>
+    </div>
+
+    <div class="pb-dossier">
+      <dl class="pb-facts">
+        <dt>Tagline</dt><dd>software &amp; AI engineering. / long rides, long runs, loud music. — set as two deliberate output lines (line 1 &quot;software &amp; AI engineering&quot;, line 2 &quot;long rides, long runs, loud music&quot;) rather than one sentence that wraps raggedly. Swap either line independently; keep each under ~33 characters so neither ever wraps (line 2 is currently 33 and was measured wrap-free down to 320px).</dd>
+        <dt>Typeface</dt><dd>Berkeley Mono, self-hosted as a subset woff2.</dd>
+        <dt>Themes</dt><dd>Commits to one look in both themes — a deliberate choice for this aesthetic.</dd>
+      </dl>
+      <ul class="pb-swatches"><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#14141d"></span><span class="pb-sw__c" style="background:#14141d"></span></span><code class="pb-sw__tok">--ground-a</code><span class="pb-sw__role">gradient origin, upper-left light source — the lightest ground pixel, so every ratio below is computed against THIS stop with grain composited in</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#0b0b11"></span><span class="pb-sw__c" style="background:#0b0b11"></span></span><code class="pb-sw__tok">--ground-b</code><span class="pb-sw__role">gradient mid — the effective ground under the rows</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#07070b"></span><span class="pb-sw__c" style="background:#07070b"></span></span><code class="pb-sw__tok">--ground-c</code><span class="pb-sw__role">gradient falloff at the lower-right corner</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#eceaf4"></span><span class="pb-sw__c" style="background:#eceaf4"></span></span><code class="pb-sw__tok">--ink</code><span class="pb-sw__role">name and link labels — 14.7:1 worst case</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#9a97a8"></span><span class="pb-sw__c" style="background:#9a97a8"></span></span><code class="pb-sw__tok">--ink-2</code><span class="pb-sw__role">tagline, paths, resting mark colour — 6.1:1 worst case</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#8c8a99"></span><span class="pb-sw__c" style="background:#8c8a99"></span></span><code class="pb-sw__tok">--ink-3</code><span class="pb-sw__role">the year, the quietest thing on the page — 5.2:1 worst case (was #82808f, which measured 4.4:1 once the grain was accounted for)</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#a78bff"></span><span class="pb-sw__c" style="background:#a78bff"></span></span><code class="pb-sw__tok">--phos</code><span class="pb-sw__role">the one accent: caret, selection marker, lit label and mark, focus ring — 6.5:1 on ground, 5.5:1 on the selection bar</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#9880ea"></span><span class="pb-sw__c" style="background:#9880ea"></span></span><code class="pb-sw__tok">--phos-2</code><span class="pb-sw__role">prompt sigils, quieter than the accent proper — 5.5:1 worst case (was #8a72e0 at 4.5:1, and it sits in the header where the ground is lightest)</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:rgba(167, 139, 255, 0.22)"></span><span class="pb-sw__c" style="background:rgba(167, 139, 255, 0.22)"></span></span><code class="pb-sw__tok">--rule</code><span class="pb-sw__role">the two 1px hairlines bracketing the listing, violet-tinted so structure ties to accent; raised from 0.16 (1.24:1) so the listing&#x27;s structure survives a dim display</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:rgba(122, 92, 255, 0.15)"></span><span class="pb-sw__c" style="background:rgba(122, 92, 255, 0.15)"></span></span><code class="pb-sw__tok">--sel</code><span class="pb-sw__role">hover/focus selection bar, full-bleed across the terminal measure</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:rgba(122, 92, 255, 0.24)"></span><span class="pb-sw__c" style="background:rgba(122, 92, 255, 0.24)"></span></span><code class="pb-sw__tok">--sel-active</code><span class="pb-sw__role">pressed state — the tightest pair on the page at 4.66:1</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:120ms"></span><span class="pb-sw__c" style="background:120ms"></span></span><code class="pb-sw__tok">--t</code><span class="pb-sw__role">transition duration (not a colour); linear easing throughout so state changes read mechanical, not soft</span></li></ul>
+      
+      <details class="pb-more">
+        <summary>Judges&rsquo; read, risks &amp; engineering notes</summary>
+        <div class="pb-more__in">
+          <p class="pb-verdict"><span class="pb-lens">taste</span> Craftiest single detail in the set and the least fit for purpose. A terminal transcript is a costume rather than a composition, it forfeits light mode, and it is the one direction with nowhere to put a bio.</p><p class="pb-verdict"><span class="pb-lens">fit</span> Unusually disciplined for a terminal pastiche, and its hover is the best-argued interaction here. But it fails the one job the page has — the name does not command the page — and its type system measures as a single face plus an accident.</p><p class="pb-verdict"><span class="pb-lens">craft</span> Structurally the best-behaved layout of the five — the only one that actually centres itself at desktop — and the ch-based grid is genuinely elegant. Held back by three self-inflicted costs: a perpetual animation, the weakest focus ring in the set, and container queries on the layout root whose documented footgun is designed in rather than designed out.</p>
+          <h4>Strengths</h4><ul class="pb-list"><li>`--lbcol: 8.5ch` resolving against the row&#x27;s own font-size is the best single technical idea across all five directions: the label column self-corrects to whatever advance width the shipped mono has, so swapping the typeface cannot desync the grid. d1&#x27;s `max-content` plus fixed padding does not have this property.</li><li>Two genuinely serious layout bugs found and fixed: a container query cannot restyle its own container, so `@container { SCOPE { --px … } }` left row padding at 24px while font sizes correctly stepped down — a silently half-applied breakpoint; and `display:flex` + `justify-content:center` + `overflow:hidden` distributes negative free space upward, measured -33px at 320px with the name&#x27;s ascenders sliced off and unreachable. Replacing it with `margin-block: auto` (which resolves to 0 when free space is negative) is exactly right.</li><li>Grid rigor is real, not claimed: all six paths start at x=169.6 and all six labels at x=88, single values. The spine holds.</li><li>The hover is the strongest state design in the set: a full-bleed selection bar that ignores the text inset, plus a marker that snaps rather than fades. This is literally how TUI selection behaves, so the metaphor pays off in interaction instead of in decoration.</li><li>The only direction correctly centred at a large viewport: measured term centre 1028 against viewport centre 1028 at 2056px. margin-block:auto over justify-content:center is the right call and provably cannot clip content upward when free space goes negative.</li><li>--lbcol: 8.5ch resolving against .row&#x27;s own font-size is the sharpest single idea in the set: the label track self-corrects to whatever mono actually ships, so swapping the typeface cannot desync the grid.</li></ul>
+          <h4>Weaknesses</h4><ul class="pb-list"><li>Reads as engineer-cosplay, not taste. A stranger who is not an engineer gets a wall of 13–14px monospace, and the path column actively works against the page&#x27;s job: `/athletes/115751174` communicates nothing and `/user/theultimatepanda` front-loads mechanism over meaning. This is the direction most likely to feel embarrassing in a year — not because it dates, but because it is a theme.</li><li>Zero headroom for anything that is not a link. A bio or a projects section requires a second invented command and a second prompt, at which point it becomes an actual fake shell session and collapses into the kitsch it spent all its restraint avoiding. The direction names this itself.</li><li>Hierarchy failure, measured: 22px name against 14px rows is 1.57x. For a page whose entire purpose is to say a name, the name does not dominate — and at the 560 panel it reads as a line of body copy with a sigil in front of it.</li><li>Computed font families across the whole panel come back as exactly [&#x27;ui-monospace&#x27;, &#x27;Georgia&#x27;]. One measurement captures both problems: there is no type contrast anywhere, and the single non-mono thing on the page is the uncorrected Georgia italic Venmo V — maximally conspicuous inside a strict monospace grid.</li><li>At html{font-size:32px} all six .hd paths truncate, including rukna1000@gmail.com. The email address — the one string a reader might need to copy — becomes unreadable for exactly the low-vision users who raised the font size.</li><li>The blinking caret is an infinite animation (d2-caret 1.1s step-end infinite). It is the only perpetual compositor animation of the five, so the page never goes idle on a static personal site. It also implies you can type where there is no input.</li></ul>
+          <h4>How it fails or ages</h4><ul class="pb-list"><li>Terminal-as-personal-site is a well-worn engineer trope, and the only thing separating this from cosplay is what it refuses to do. It has almost no tolerance for accretion: add ASCII art, a typing animation, a scanline overlay, a fake `whoami`, or a second invented command and it collapses into a theme. Whoever maintains it has to understand that the restraint IS the design.</li><li>It commits to dark with no light fallback, by choice. A recruiter opening it on a phone in daylight gets a low-luminance page, and a light-mode user gets a page that ignores them. If that turns out to matter it cannot be patched with a token swap - the phosphor accent, the selection bar, and the grain are all derived from the near-black ground and would need re-deriving.</li><li>The violet phosphor is defensible today only because it reconciles the favicon. Change that icon and the accent becomes arbitrary. Violet-on-black also reads faintly &#x27;AI startup&#x27; in 2026 in a way green or amber would not, which cuts against the timelessness the restraint is buying.</li><li>Monospace at 13-14px is genuinely less legible than a good sans at the same size - narrower apertures, more uniform word shapes - and it penalises low-vision readers more than a proportional face would, even though every pair here clears 4.5:1. The 19-character email address is where that is most exposed.</li><li>The path column is charming to engineers and opaque to everyone else. `/athletes/115751174` communicates literally nothing to a human reader, and `/user/theultimatepanda` front-loads mechanism over meaning. A words-based third column (&#x27;code&#x27;, &#x27;rides&#x27;, &#x27;listening&#x27;) would be warmer but cutesier; I chose honesty and it costs some warmth.</li></ul>
+          <h4>Porting to Astro</h4><p class="pb-note">MAPPING ONTO Base.astro
+
+This direction commits to one look, so the light/dark split collapses. Replace the `:root` block and DELETE the `@media (prefers-color-scheme: dark)` override entirely:
+
+  :root { color-scheme: dark;   /* was: light dark */
+    --ground-a:#14141d; --ground-b:#0b0b11; --ground-c:#07070b;
+    --ink:#eceaf4; --ink-2:#9a97a8; --ink-3:#8c8a99;
+    --phos:#a78bff; --phos-2:#9880ea;
+    --rule:rgba(167,139,255,.22); --sel:rgba(122,92,255,.15);
+    --sel-active:rgba(122,92,255,.24); }
+
+Token by token against what is there now:
+- `--bg-1/--bg-2` (two stops) become `--ground-a/b/c` (three). The current `radial-gradient(130% 130% at 50% 35%, ...)` is centred and symmetrical; swap for `radial-gradient(115% 85% at 20% -5%, ...)` so the ground has a direction instead of a halo.
+- `--fg #f0f0f2` -&gt; `--ink #eceaf4`, slightly violet-warm so it does not read cold against the accen…</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</article>
+<article class="pb-spec" id="d5">
+  <div class="pb-spec__bar">
+    <span class="pb-spec__rank">D5</span>
+    <h2 class="pb-spec__name">Kinetic Minimal</h2>
+    <dl class="pb-scores"><div class="pb-score"><dt>taste</dt><dd>6</dd></div><div class="pb-score"><dt>fit</dt><dd>4.5</dd></div><div class="pb-score"><dt>craft</dt><dd>6.5</dd></div><div class="pb-score pb-score--avg"><dt>avg</dt><dd>5.67</dd></div></dl>
+    
+  </div>
+
+  <p class="pb-concept">A name, two thin mono lines, a hairline with an accent lead-in, and six lowercase links stacked in one column on a near-flat ground. Nothing decorates it — the craft is in a staggered mask-reveal on load and a four-part hover response that is choreographed rather than merely applied.</p>
+
+  <div class="pb-body">
+    <div class="pb-stagewrap">
+      <div class="pb-stage d5" data-stage="d5" role="img" aria-label="Design preview: Kinetic Minimal"></div>
+      <div class="pb-stagefoot">
+        <button class="pb-replay" type="button" data-replay="d5">Replay load animation</button>
+        <span class="pb-dim">preview at 480&times;440</span>
+      </div>
+    </div>
+
+    <div class="pb-dossier">
+      <dl class="pb-facts">
+        <dt>Tagline</dt><dd>Software &amp; AI engineering / Runs, rides, records</dd>
+        <dt>Typeface</dt><dd>Söhne (Buch for the name, Kräftig if it wants more weight) paired with Berkeley Mono for the descriptor, labels, and footer.</dd>
+        <dt>Themes</dt><dd>Designed for light and dark.</dd>
+      </dl>
+      <ul class="pb-swatches"><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#fafafb"></span><span class="pb-sw__c" style="background:#17171b"></span></span><code class="pb-sw__tok">--bg-1</code><span class="pb-sw__role">Ground highlight, anchored at 6% -8% so the page brightens toward the name</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#eeeef1"></span><span class="pb-sw__c" style="background:#0e0e11"></span></span><code class="pb-sw__tok">--bg-2</code><span class="pb-sw__role">Ground shadow; only ~3% off bg-1 so the field reads near-flat, not gradient-y. Text is checked against BOTH endpoints, since the gradient means neither one alone is &#x27;the&#x27; background</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#17171a"></span><span class="pb-sw__c" style="background:#f2f2f5"></span></span><code class="pb-sw__tok">--ink</code><span class="pb-sw__role">Name and link labels. Worst case 15.45:1 light (on bg-2), 16.00:1 dark (on bg-1)</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#5c5c66"></span><span class="pb-sw__c" style="background:#9a9aa6"></span></span><code class="pb-sw__tok">--ink-2</code><span class="pb-sw__role">Descriptor and footer. Worst case 5.71:1 light (on bg-2), 6.42:1 dark (on bg-1) — replaces the failing --muted. Both endpoints clear AA at 12px and 11px</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#3f3f47"></span><span class="pb-sw__c" style="background:#c4c4cc"></span></span><code class="pb-sw__tok">--mark</code><span class="pb-sw__role">Resting icon colour, one step back from --ink so marks recede under labels. Worst case 9.01:1 light, 10.31:1 dark</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#d7d7dd"></span><span class="pb-sw__c" style="background:#26262c"></span></span><code class="pb-sw__tok">--rule</code><span class="pb-sw__role">The 1px hairline after its accent lead-in. Purely decorative and aria-hidden — 1.24:1, deliberately below the 3:1 UI-component floor because it identifies nothing and controls nothing</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#5b3df5"></span><span class="pb-sw__c" style="background:#a394ff"></span></span><code class="pb-sw__tok">--accent</code><span class="pb-sw__role">Underline wipe, hovered mark, focus ring, rule lead-in. Worst case 5.29:1 light, 7.01:1 dark — clears 3:1 as a focus indicator and 4.5:1 even if it is ever used as body text</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:rgba(91,61,245,.20)"></span><span class="pb-sw__c" style="background:rgba(163,148,255,.24)"></span></span><code class="pb-sw__tok">--glow</code><span class="pb-sw__role">Radial bloom behind the hovered mark; the only soft light on the page</span></li></ul>
+      
+      <details class="pb-more">
+        <summary>Judges&rsquo; read, risks &amp; engineering notes</summary>
+        <div class="pb-more__in">
+          <p class="pb-verdict"><span class="pb-lens">taste</span> The best resting composition after d1 and by far the sharpest QA, wrapped in the one feature that disqualifies it from being a front door: an unskippable 900ms entrance that plays on every single load.</p><p class="pb-verdict"><span class="pb-lens">fit</span> Contains the single most elegant detail in the set and the least resolved composition. It is d1 with the load-bearing elements deleted, betting everything on motion that the render shows to be a 6px event.</p><p class="pb-verdict"><span class="pb-lens">craft</span> The sharpest engineering judgment in the set at the level of individual details — I independently verified all three of its non-obvious catches and all three are correct — attached to the worst maintainability property: correctness that depends on the source order of same-specificity rules across four interacting media blocks. It also owns the only outright touch-target failure and the most fragile focus ring.</p>
+          <h4>Strengths</h4><ul class="pb-list"><li>The at-rest page is close to d1&#x27;s and durable for the same reasons: 34px name, two mono lines, one hairline, a single flex column that cannot reflow, no gradient-heavy surface.</li><li>Takes a seventh link trivially — one more `&lt;a&gt;` in a `flex-direction: column`, no grid arithmetic — and a bio slots under `.role` with no structural consequence. Second-best headroom in the set.</li><li>The hairline with a 2.5rem accent lead-in is the best small idea in the whole set: one line carrying the brand color as an inflection rather than as an applied decoration. Worth stealing.</li><li>The counter-drift on hover — icon -2px, label +4px — is a genuinely considered decision. Most people would move both the same direction.</li><li>Best-reasoned optical normalisation of the five, and the only one that noticed the email icon is viewBox 0 0 512 512 with a 4:3 glyph, not a square. It then does real ink-area math: 19x14.25x~0.85 ≈ 230px² against the GitHub disc&#x27;s π×8.5² = 227px². d1, d2 and d3 all treat that asset as 1:1 and get the correction direction wrong as a result.</li><li>The grid-to-flex catch is real and I verified it independently in a clean test: place-items:center on a 20px box with a 25px child yields offset (0,0) — start-aligned — while flex align/justify-center yields (-2.5,-2.5). Confirmed again in the ported page (slot x=852 w=20, svg x=850 w=25). The `flex: none` follow-up, needed because flex-shrink would have clawed the 25px back to 20px, is a correct second-order catch that most reviewers would miss.</li></ul>
+          <h4>Weaknesses</h4><ul class="pb-list"><li>Every revealed element is `animation: … both` with a delay, so the page is genuinely blank at t=0 and the last link lands at 860ms. A two-second first impression spends nearly half of itself watching furniture arrive — and there is no zero-JS way to not replay it. The direction concedes it is &#x27;mildly tiresome the twentieth&#x27; time. On the page you and everyone who knows you loads most often, that is the definition of novelty that embarrasses you in a year.</li><li>Because the hidden states live in keyframes with fill-mode `both`, any path that loads the CSS but does not run animations leaves rows blank. Reduced motion is handled; a content blocker or print path is not. A page whose only job is routing should not have a failure mode where the routes are invisible.</li><li>Measured compositional failure: the rule spans 352px (l=59 to r=411) while the widest link&#x27;s right edge is 160px. 251px — 71% of the measure the rule establishes — is empty. The rule promises a column the layout never uses, so it reads as a line to nowhere. At 560 it compounds: a 352px slab centered in a 560px panel, with dead space both inside and outside the slab.</li><li>At rest the accent is a 40px segment of a single 1px hairline — about 11% of one line. Of all five directions claiming to give the favicon a reason to exist, this one gives it the least.</li><li>The only direction failing the touch-target comfort target: measured 34px rows at 320px, against 44.6 / 47 / 49.5 / 73 for the others. It clears the 24px 2.5.8 floor and nothing else.</li><li>Focus ring clears the next row&#x27;s icon by 2px, not the 4.0px its QA reports, and overlaps the next row&#x27;s box by 5px (34px flush rows, outline-offset:3px, 2px stroke, zero gap). It is the tightest ring in the set and a mono fallback with a taller line-height eats the margin entirely.</li></ul>
+          <h4>How it fails or ages</h4><ul class="pb-list"><li>The stagger replays on every single load. It is ~900ms end to end, which is fine the first time and mildly tiresome the twentieth — and there is no zero-JS way to remember that a visitor has already seen it. The honest mitigation is that the total stays under a second and the at-rest page is complete without it; the dishonest one would be adding a sessionStorage flag and giving up the zero-JS property.</li><li>Every revealed element uses `animation-fill-mode: both` with a delay, so content is genuinely opacity-0 or translated out of its mask until its delay elapses. prefers-reduced-motion is the escape hatch and it was verified to restore a complete page, but any other path that loads the CSS and then fails to run animations — an aggressive content blocker, a print stylesheet that keeps the animation declarations — leaves rows blank. This is the structural cost of a staggered reveal and it is worth stating out loud rather than discovering.</li><li>Two lines of mono descriptor read as confident terseness to engineers and as cryptic to recruiters. &#x27;Runs, rides, records&#x27; in particular is a pun that only lands if you already know he is on Strava and Spotify — it is the single most swappable string on the page and should be swapped without hesitation if it does not feel like him.</li><li>Lowercase brand labels (github, linkedin, venmo) are a style choice with a shelf life. They read deliberate now; if the taste cycle turns they will read like 2010s startup lowercase. Capitalising all six is a one-line change and costs the design nothing.</li><li>The accent lives almost entirely in interaction states, so at rest on a phone the brand purple is a 40px segment of hairline and a 30%-opacity underline. The @media (hover: none) block now gives :active the bloom and the label step as well, but that is still a patch on a real structural asymmetry — this direction is genuinely better on a desktop with a pointer than on a phone.</li></ul>
+          <h4>Porting to Astro</h4><p class="pb-note">Base.astro token surgery, keeping the names where they still mean something: --bg-1/--bg-2 keep their names but take the new near-flat values (#fafafb/#eeeef1 light, #17171b/#0e0e11 dark) and the body gradient re-anchors from `130% 130% at 50% 35%` to `135% 105% at 6% -8%` so the light pools behind the name rather than the middle of nowhere. --fg becomes --ink (#17171a / #f2f2f5). --muted becomes --ink-2 with the fixed values #5c5c66 / #9a9aa6 — this is the one change that must not be skipped, it is the AA failure (the shipped #8a8a90/#6b6b72 are 3.12 / 3.42). --icon becomes --mark (#3f3f47 / #c4c4cc). --icon-hover is deleted; hover is --accent now. --accent stops being decorative and gains a dark variant: #5b3df5 light, #a394ff dark (the shipped #5b3df5 is only ~3.1:1 on the dark ground, so reusing it there would repeat the exact bug being fixed). Add --glow, --sans, --mono, and the fiv…</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</article>
+<article class="pb-spec" id="d3">
+  <div class="pb-spec__bar">
+    <span class="pb-spec__rank">D3</span>
+    <h2 class="pb-spec__name">Depth and Grain</h2>
+    <dl class="pb-scores"><div class="pb-score"><dt>taste</dt><dd>5.5</dd></div><div class="pb-score"><dt>fit</dt><dd>3</dd></div><div class="pb-score"><dt>craft</dt><dd>7</dd></div><div class="pb-score pb-score--avg"><dt>avg</dt><dd>5.17</dd></div></dl>
+    
+  </div>
+
+  <p class="pb-concept">A flat near-black ground, one broad accent bloom sited behind the identity as a single light source, and a fine additive grain laid over everything including the tiles. The six mismatched marks are put on one optical grid inside frosted hairline tiles, each glyph individually sized to match apparent weight rather than box.</p>
+
+  <div class="pb-body">
+    <div class="pb-stagewrap">
+      <div class="pb-stage d3" data-stage="d3" role="img" aria-label="Design preview: Depth and Grain"></div>
+      <div class="pb-stagefoot">
+        <button class="pb-replay" type="button" data-replay="d3">Replay load animation</button>
+        <span class="pb-dim">preview at 480&times;440</span>
+      </div>
+    </div>
+
+    <div class="pb-dossier">
+      <dl class="pb-facts">
+        <dt>Tagline</dt><dd>Software and AI engineering. Long rides, loud records.</dd>
+        <dt>Typeface</dt><dd>Inter Display (or Inter v4 with `opsz`), self-hosted woff2, weights 400/500/600 plus a mono for the wordmark — Berkeley Mono if licensed, otherwise JetBrains Mono.</dd>
+        <dt>Themes</dt><dd>Commits to one look in both themes — a deliberate choice for this aesthetic.</dd>
+      </dl>
+      <ul class="pb-swatches"><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#09090c"></span><span class="pb-sw__c" style="background:#09090c"></span></span><code class="pb-sw__tok">--ground</code><span class="pb-sw__role">Flat deep ground. Intentionally flat — the bloom and grain do all tonal modulation. Set below #0a0a0d because the additive grain lifts the composited average: measured +4.7/255 mean, so the field reads ~#0e0e11 and peaks near #121215.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#5b3df5"></span><span class="pb-sw__c" style="background:#5b3df5"></span></span><code class="pb-sw__tok">--accent</code><span class="pb-sw__role">The favicon purple, finally used. Decorative only — measured 1.71:1 on a tile bed and 3.25:1 on the bare ground, so it is never applied to text. Drives the bloom, hover hairline, hover glow, dot halo.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#a394ff"></span><span class="pb-sw__c" style="background:#a394ff"></span></span><code class="pb-sw__tok">--accent-lift</code><span class="pb-sw__role">Accent lightened until it is safe as a visible graphic: the 5px mark dot and the 2px focus ring. Worst case 4.84:1 against the field just outside a tile and 4.28:1 against the tile bed itself — both past the 3:1 needed for non-text UI, on both sides of the 3px outline offset.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#f2f2f5"></span><span class="pb-sw__c" style="background:#f2f2f5"></span></span><code class="pb-sw__tok">--ink</code><span class="pb-sw__role">Name, tile labels, hovered glyph. 8.94:1 at the synthetic worst case (bloom core, saturated backdrop, hovered tile bed, grain peak); 14.35:1 where the grid actually sits.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#b6b6c2"></span><span class="pb-sw__c" style="background:#b6b6c2"></span></span><code class="pb-sw__tok">--ink-2</code><span class="pb-sw__role">Tagline, resting glyph, hovered sub-label. 4.98:1 worst case on a hovered tile, 6.14:1 for the tagline over the bloom.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:#a8a8b6"></span><span class="pb-sw__c" style="background:#a8a8b6"></span></span><code class="pb-sw__tok">--ink-3</code><span class="pb-sw__role">Wordmark, resting tile sub-labels, footer. 4.64:1 at the synthetic ceiling and 6.83:1 at the tiles&#x27; real position; replaces --muted, which failed at 3.42:1. Deliberately only three steps off --ink-2 — that gap is the sub-label&#x27;s hover lift, so it cannot be raised for margin without erasing the state change.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:color-mix(in oklab, var(--ink) 11%, transparent)"></span><span class="pb-sw__c" style="background:color-mix(in oklab, var(--ink) 11%, transparent)"></span></span><code class="pb-sw__tok">--hair</code><span class="pb-sw__role">The 1px tile border. 11%, not 9% — at 9% the tiles dissolved in the dark lower-right where the bloom does not reach.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:color-mix(in oklab, var(--ink) 4.5%, transparent)"></span><span class="pb-sw__c" style="background:color-mix(in oklab, var(--ink) 4.5%, transparent)"></span></span><code class="pb-sw__tok">--fill</code><span class="pb-sw__role">Tile body. Translucent so backdrop-filter has something to sample where the bloom crosses a tile.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:color-mix(in oklab, var(--ink) 7.5%, transparent)"></span><span class="pb-sw__c" style="background:color-mix(in oklab, var(--ink) 7.5%, transparent)"></span></span><code class="pb-sw__tok">--fill-hi</code><span class="pb-sw__role">Hovered/focused tile body. A 3-point lift, cross-faded, never a translate.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:color-mix(in oklab, var(--ink) 10%, transparent)"></span><span class="pb-sw__c" style="background:color-mix(in oklab, var(--ink) 10%, transparent)"></span></span><code class="pb-sw__tok">--lip</code><span class="pb-sw__role">inset 0 1px 0 top-edge highlight. Sits inside the border, so tile top edges get a border-then-lip double edge consistent with light arriving from upper left.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:color-mix(in oklab, var(--ink) 17%, transparent)"></span><span class="pb-sw__c" style="background:color-mix(in oklab, var(--ink) 17%, transparent)"></span></span><code class="pb-sw__tok">--lip-hi</code><span class="pb-sw__role">Hover state of the lip — the tile appears to tilt into the light rather than move.</span></li><li class="pb-sw"><span class="pb-sw__chips" aria-hidden="true"><span class="pb-sw__c" style="background:0 1px 2px rgb(0 0 0 / 0.34)"></span><span class="pb-sw__c" style="background:0 1px 2px rgb(0 0 0 / 0.34)"></span></span><code class="pb-sw__tok">--drop</code><span class="pb-sw__role">The tile&#x27;s ambient contact shadow, tokenised because it now appears in three shadow lists (rest, hover, coarse-pointer reset). Single-sourcing it is what stops a future editor from drifting one copy and inventing a second glow.</span></li></ul>
+      
+      <details class="pb-more">
+        <summary>Judges&rsquo; read, risks &amp; engineering notes</summary>
+        <div class="pb-more__in">
+          <p class="pb-verdict"><span class="pb-lens">taste</span> The most beautifully executed panel here and the worst possible choice for a permanent site. It is a screenshot of 2025 that will read as one in 2028, and it says so itself.</p><p class="pb-verdict"><span class="pb-lens">fit</span> Competently built pastiche. This is precisely the look the brief warned against, executed without a single decision that could not have been generated by anyone else, and its hierarchy is inverted: the decoration is louder than the identity.</p><p class="pb-verdict"><span class="pb-lens">craft</span> The best token architecture and the best text-scaling behaviour of all five, wrapped around a payload of decorative cost that does nothing. Its color-mix-derived surface system is the most maintainable thing in the set — and it ironically makes the light theme the direction refuses to ship nearly free.</p>
+          <h4>Strengths</h4><ul class="pb-list"><li>Exceptional measurement rigour — rasterising the feTurbulence data-URI to find it contributes +4.7/255 mean and then computing every contrast pair against the grained, saturated, bloom-lit composite is work almost nobody does. The finding that `overlay` and `soft-light` collapse to ~0.4/255 on a near-black ground and only `plus-lighter` registers is a genuinely useful fact.</li><li>Real bugs caught: the `clamp(1.625rem, 6.6cqw, 2.125rem)` name sat on its 26px floor from 280px all the way to 440px — a dead fluid ramp across most of the stated range; `calc(90ms + var(--i) * 48ms)` with no fallback goes invalid at computed-value time and resets delay to 0s; `list-style: none` strips the list role in Safari.</li><li>Technically the most careful build: the 8-stop bloom genuinely avoids the hard-edged blob a 3-stop gradient gives you, the grain contribution was measured rather than guessed, and the per-mark optical sizing works in render.</li><li>The only direction with any softness or warmth, which is a real axis the others abandon entirely.</li><li>Best rem-scaling behaviour measured: at html{font-size:32px} in 390px, zero overflow and zero truncation — the only direction with both. min-width:0 discipline on every flex/grid child plus max-width:30ch on the lede absorbs it.</li><li>Best token architecture: six translucent surfaces (--hair/--fill/--fill-hi/--lip/--lip-hi) all derived from --ink via color-mix(in oklab, …). One hue source; change --ink and every surface follows. Nothing else here is that DRY.</li></ul>
+          <h4>Weaknesses</h4><ul class="pb-list"><li>Fails my primary test on its own admission: &#x27;reads as 2023-2026 SaaS, and it will date as a period style the way skeuomorphic gradients and long shadows did.&#x27; Bloom plus grain plus frosted tile plus staggered mask-wipe is the single most-imitated vocabulary of this moment. In three years this is the one that looks like a template.</li><li>Says &#x27;follows design fashion&#x27;, not &#x27;has taste and technical depth&#x27;. There is no typographic idea and no structural idea — the sophistication is all in the ground treatment. The `mono` wordmark is the only technical signal and it is 0.6875rem.</li><li>This is the template. Computed style confirms the full 2023–26 dark-SaaS kit unmodified: 12px radius, hairline border, inset top lip, backdrop-filter blur(6px) saturate(1.35), 2x3 card grid, tiny glowing dot, mono wordmark, corner bloom, noise overlay. Nothing here is specific to this person or this site.</li><li>Inverted hierarchy, measured: the name is 30.8px — second-smallest display size in the set — while a full-panel violet gradient is the loudest element on screen. The decoration outranks the identity on a page whose only job is identity.</li><li>No outer measure cap. .stage has no max-width and neither do .name/.lede/.head — only .nav is capped at 34rem. Screenshot at 2056px: the whole composition hugs the far left in a 544px column with ~1500px of dead field, and because the bloom is anchored at 14%/-8% it lights the EMPTY region while the content sits in the dark. The light source and the content are anti-correlated at desktop aspect.</li><li>Six backdrop-filter: blur(6px) tiles that blur nothing. The grain is painted ABOVE the tiles at z-index:3, so each tile&#x27;s backdrop is flat ground plus a smooth 8-stop radial — zero high-frequency content. Only saturate(135%) has any effect. That is six compositor layers and a per-paint readback for a visual no-op, and the QA&#x27;s own &#x27;the tiles still read correctly if blur doesn&#x27;t render&#x27; admission proves it is inessential.</li></ul>
+          <h4>How it fails or ages</h4><ul class="pb-list"><li>Committed dark is a real bet. The host page stamps data-theme and I emit no light tokens, so a viewer who deliberately flips to light gets the dark card anyway and may read it as broken rather than intentional. I chose this because a frosted tile with a top-edge highlight and an additive grain is a dark-UI idiom — the light-mode translation would be a different design wearing this one&#x27;s name — but if the user wants a working light mode, this is the direction that has to change most.</li><li>This is the most-imitated look on the internet right now. The bloom-plus-grain-plus-frosted-tile vocabulary reads as 2023-2026 SaaS, and it will date as a period style the way skeuomorphic gradients and long shadows did. The discipline (one bloom, one grain, one accent, no crude translate) is what separates it from the pastiche, and that discipline is exactly what a future editor is most likely to erode by adding a second glow. The --drop token exists partly to make that harder.</li><li>mix-blend-mode: plus-lighter is load-bearing for the grain. Measured on this ground it contributes +4.7/255 on average and +9.4/255 at peaks; overlay and soft-light collapse to ~0.4/255 and do literally nothing, so the usual copy-pasted grain recipe is invisible here. plus-lighter degrades to normal compositing, within 1/255 on a dark field, so the fallback is safe. But the grain silently stops mattering if the ground is ever lightened, and every contrast figure in the palette is computed with the grain peak added — anyone raising --ground must re-derive both.</li><li>The tile secondary labels (&quot;the code&quot;, &quot;work history&quot;) are voice, and voice is the most personal thing here. They read as considered to me and twee to someone else, and they are the first thing I would expect the user to rewrite. They are also the reason the tiles can be 2-up at 380px — the strings are capped near 12 characters and will ellipsis rather than wrap if lengthened.</li><li>Six backdrop-filter tiles each get their own compositor layer. It is fine on this page but it is not free, and on a low-end Android the blur may quietly not render — the tiles still read correctly from fill plus hairline plus lip, so this fails soft, but the frosted quality is the part that would be lost.</li></ul>
+          <h4>Porting to Astro</h4><p class="pb-note">MAPPING ONTO Base.astro — this direction replaces the token block rather than extending it. --bg-1/--bg-2 and the body radial-gradient go away entirely: the ground is flat and the bloom is a separate element, which is the whole point of the layering. Keep --accent: #5b3df5 verbatim (it is the favicon) and add --accent-lift: #a394ff plus --drop. --fg -&gt; --ink, --icon -&gt; --ink-2. Delete --muted: it fails AA in both themes and every one of its uses is now --ink-3. Drop `color-scheme: light dark` and set `color-scheme: dark` so form controls and scrollbars match; add `&lt;meta name=&quot;theme-color&quot; content=&quot;#09090c&quot;&gt;`. On SCOPE-as-body: keep display:flex/column, position:relative, isolation:isolate, and DROP overflow:hidden — the bloom is inset:0 so nothing bleeds, and overflow:hidden on body kills scroll anchoring. The existing global `* { box-sizing: border-box }` already covers the border-box d…</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</article>
+
+  <section class="pb-close">
+    <h2>Where the judges landed</h2>
+    <p><strong>The Index Page took all three votes</strong> &mdash; and it was first on every individual
+      lens, which almost never happens. The reason all three converged: it is the only direction that would
+      still read as a designed object printed flat in one color with no interaction at all. The other four
+      lean on a surface treatment &mdash; phosphor, bloom and grain, motion, a violet spine &mdash; to carry
+      a composition that is weaker underneath.</p>
+    <div class="pb-crossgrid"><div class="pb-cross"><h3>taste &middot; picked d1</h3><p>METHOD: I read the real source rather than trusting the briefs — /Users/ankur/Documents/projects/deploy-goobta.io/services/goobta.io/src/pages/index.astro, src/layouts/Base.astro, and public/favicon.svg. Two things there changed my ranking.…</p></div><div class="pb-cross"><h3>fit &middot; picked d1</h3><p>METHOD — I did not judge from the write-ups. I rebuilt all five verbatim with the real production SVGs from src/pages/index.astro, rendered them side by side at 380/470/560 in both themes, forced one row per direction into its hover state (rewriting &#x27;:hover&#x27; to a class, since hover cannot be screens…</p></div><div class="pb-cross"><h3>craft &middot; picked d1</h3><p>GRAFTS WORTH TAKING, highest value first.…</p></div></div>
+    <p>Two caveats worth your attention before you pick. The fit judge noted that <strong>d1 is also the
+      least memorable of the five</strong> &mdash; it wins on permanence and loses on charm; if you want
+      people to say &ldquo;nice site&rdquo; rather than never having to touch it again, Structural Grid is
+      the better fit, but a seventh link would force a redesign. And <strong>d1 spends its accent on a
+      single period</strong>, so on a phone, where there is no hover, the entire brand color is one full
+      stop &mdash; the cheapest fix is grafting d4&rsquo;s move and putting the favicon&rsquo;s violet
+      <code>g</code> on the page itself.</p>
+  </section>
+</div>
+
+<script>window.__PB_STAGES__ = {"d1": "<article class=\"page\">\n  <header class=\"masthead\">\n    <h1 class=\"name\">Ankur Gupta<span class=\"stop\" aria-hidden=\"true\">.</span></h1>\n    <p class=\"deck\">Software and AI engineering. Cyclist, runner, heavy listener.</p>\n  </header>\n\n  <nav class=\"index\" aria-label=\"Profiles and contact\">\n    <a class=\"row r-github\" href=\"https://github.com/goobta\" target=\"_blank\" rel=\"noopener noreferrer\">\n      <span class=\"ico\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12\"/></svg></span>\n      <span class=\"label\">GitHub</span>\n      <span class=\"note\">code</span>\n      <span class=\"mark\" aria-hidden=\"true\"></span>\n      <span class=\"vh\">Opens in a new tab</span>\n    </a>\n\n    <a class=\"row r-linkedin\" href=\"https://www.linkedin.com/in/goobta/\" target=\"_blank\" rel=\"noopener noreferrer\">\n      <span class=\"ico\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z\"/></svg></span>\n      <span class=\"label\">LinkedIn</span>\n      <span class=\"note\">work</span>\n      <span class=\"mark\" aria-hidden=\"true\"></span>\n      <span class=\"vh\">Opens in a new tab</span>\n    </a>\n\n    <a class=\"row r-email\" href=\"mailto:rukna1000@gmail.com\">\n      <span class=\"ico\" aria-hidden=\"true\"><svg viewBox=\"0 0 512 512\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48L48 64zM0 176L0 384c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-208L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z\"/></svg></span>\n      <span class=\"label\">Email</span>\n      <span class=\"note\">rukna1000@gmail.com</span>\n      <span class=\"mark\" aria-hidden=\"true\"></span>\n    </a>\n\n    <a class=\"row r-strava\" href=\"https://www.strava.com/athletes/115751174\" target=\"_blank\" rel=\"noopener noreferrer\">\n      <span class=\"ico\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169\"/></svg></span>\n      <span class=\"label\">Strava</span>\n      <span class=\"note\">rides &amp; runs</span>\n      <span class=\"mark\" aria-hidden=\"true\"></span>\n      <span class=\"vh\">Opens in a new tab</span>\n    </a>\n\n    <a class=\"row r-spotify\" href=\"https://open.spotify.com/user/theultimatepanda\" target=\"_blank\" rel=\"noopener noreferrer\">\n      <span class=\"ico\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z\"/></svg></span>\n      <span class=\"label\">Spotify</span>\n      <span class=\"note\">listening</span>\n      <span class=\"mark\" aria-hidden=\"true\"></span>\n      <span class=\"vh\">Opens in a new tab</span>\n    </a>\n\n    <a class=\"row r-venmo\" href=\"https://venmo.com/u/agupta628\" target=\"_blank\" rel=\"noopener noreferrer\">\n      <span class=\"ico\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M3 4h4.4L12 13.4 16.6 4H21l-9 16z\"/></svg></span>\n      <span class=\"label\">Venmo</span>\n      <span class=\"note\">settle up</span>\n      <span class=\"mark\" aria-hidden=\"true\"></span>\n      <span class=\"vh\">Opens in a new tab</span>\n    </a>\n  </nav>\n\n  <footer class=\"colophon\">\n    <span class=\"site\">goobta.io</span>\n    <span class=\"copy\">&copy; Ankur Gupta 2026</span>\n  </footer>\n</article>", "d4": "<div class=\"frame\">\n  <h1 class=\"name\"><span>Ankur</span> <span>Gupta</span></h1>\n\n  <p class=\"role\">\n    <span>Software &amp; AI engineering</span>\n    <span class=\"sep\" aria-hidden=\"true\">/</span>\n    <span>Runs, rides, listens</span>\n  </p>\n\n  <div class=\"mark\">\n    <span class=\"mark-glyph\" aria-hidden=\"true\">g</span>\n    <span class=\"mark-word\">goobta.io</span>\n  </div>\n\n  <nav class=\"links\" aria-label=\"Profiles and contact\">\n    <a class=\"cell c-github\" href=\"https://github.com/goobta\" target=\"_blank\" rel=\"noopener noreferrer\">\n      <span class=\"face\"><span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12\"/></svg></span><span class=\"label\">GitHub</span></span>\n      <span class=\"idx\" aria-hidden=\"true\">01</span>\n    </a>\n    <a class=\"cell c-linkedin\" href=\"https://www.linkedin.com/in/goobta/\" target=\"_blank\" rel=\"noopener noreferrer\">\n      <span class=\"face\"><span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z\"/></svg></span><span class=\"label\">LinkedIn</span></span>\n      <span class=\"idx\" aria-hidden=\"true\">02</span>\n    </a>\n    <a class=\"cell c-email\" href=\"mailto:rukna1000@gmail.com\">\n      <span class=\"face\"><span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 512 512\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48L48 64zM0 176L0 384c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-208L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z\"/></svg></span><span class=\"label\">Email</span></span>\n      <span class=\"idx\" aria-hidden=\"true\">03</span>\n    </a>\n    <a class=\"cell c-strava\" href=\"https://www.strava.com/athletes/115751174\" target=\"_blank\" rel=\"noopener noreferrer\">\n      <span class=\"face\"><span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169\"/></svg></span><span class=\"label\">Strava</span></span>\n      <span class=\"idx\" aria-hidden=\"true\">04</span>\n    </a>\n    <a class=\"cell c-spotify\" href=\"https://open.spotify.com/user/theultimatepanda\" target=\"_blank\" rel=\"noopener noreferrer\">\n      <span class=\"face\"><span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z\"/></svg></span><span class=\"label\">Spotify</span></span>\n      <span class=\"idx\" aria-hidden=\"true\">05</span>\n    </a>\n    <a class=\"cell c-venmo\" href=\"https://venmo.com/u/agupta628\" target=\"_blank\" rel=\"noopener noreferrer\">\n      <span class=\"face\"><span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M3 4h4.4L12 13.4 16.6 4H21l-9 16z\"/></svg></span><span class=\"label\">Venmo</span></span>\n      <span class=\"idx\" aria-hidden=\"true\">06</span>\n    </a>\n  </nav>\n\n  <p class=\"meta\"><span>&copy; Ankur Gupta</span><span class=\"year\">2026</span></p>\n</div>", "d2": "<div class=\"term\">\n  <header>\n    <h1 class=\"name\">\n      <span class=\"sig\" aria-hidden=\"true\">~ %</span><span class=\"nm\">Ankur Gupta</span>\n    </h1>\n    <p class=\"tag\"><span>software &amp; AI engineering</span><span>long rides, long runs, loud music</span></p>\n  </header>\n\n  <nav class=\"rows\" aria-label=\"Profiles and contact\">\n    <a class=\"row r-github\" href=\"https://github.com/goobta\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"GitHub, github.com/goobta\">\n      <span class=\"mk\" aria-hidden=\"true\">&#8250;</span>\n      <span class=\"ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12\"/></svg></span>\n      <span class=\"lb\">github</span>\n      <span class=\"hd\">/goobta</span>\n    </a>\n    <a class=\"row r-linkedin\" href=\"https://www.linkedin.com/in/goobta/\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"LinkedIn, linkedin.com/in/goobta\">\n      <span class=\"mk\" aria-hidden=\"true\">&#8250;</span>\n      <span class=\"ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z\"/></svg></span>\n      <span class=\"lb\">linkedin</span>\n      <span class=\"hd\">/in/goobta</span>\n    </a>\n    <a class=\"row r-email\" href=\"mailto:rukna1000@gmail.com\" aria-label=\"Email, rukna1000@gmail.com\">\n      <span class=\"mk\" aria-hidden=\"true\">&#8250;</span>\n      <span class=\"ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 512 512\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48L48 64zM0 176L0 384c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-208L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z\"/></svg></span>\n      <span class=\"lb\">email</span>\n      <span class=\"hd\">rukna1000@gmail.com</span>\n    </a>\n    <a class=\"row r-strava\" href=\"https://www.strava.com/athletes/115751174\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Strava, strava.com/athletes/115751174\">\n      <span class=\"mk\" aria-hidden=\"true\">&#8250;</span>\n      <span class=\"ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169\"/></svg></span>\n      <span class=\"lb\">strava</span>\n      <span class=\"hd\">/athletes/115751174</span>\n    </a>\n    <a class=\"row r-spotify\" href=\"https://open.spotify.com/user/theultimatepanda\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Spotify, open.spotify.com/user/theultimatepanda\">\n      <span class=\"mk\" aria-hidden=\"true\">&#8250;</span>\n      <span class=\"ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z\"/></svg></span>\n      <span class=\"lb\">spotify</span>\n      <span class=\"hd\">/user/theultimatepanda</span>\n    </a>\n    <a class=\"row r-venmo\" href=\"https://venmo.com/u/agupta628\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Venmo, venmo.com/u/agupta628\">\n      <span class=\"mk\" aria-hidden=\"true\">&#8250;</span>\n      <span class=\"ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M3 4h4.4L12 13.4 16.6 4H21l-9 16z\"/></svg></span>\n      <span class=\"lb\">venmo</span>\n      <span class=\"hd\">/u/agupta628</span>\n    </a>\n  </nav>\n\n  <footer class=\"foot\">\n    <span class=\"sig\" aria-hidden=\"true\">~ %</span>\n    <span class=\"caret\" aria-hidden=\"true\"></span>\n    <span class=\"yr\">&#169; 2026</span>\n  </footer>\n</div>", "d5": "<div class=\"stage\">\n  <header>\n    <h1 class=\"name\" style=\"--i:0\"><span class=\"mask\"><span class=\"rise\">Ankur Gupta</span></span></h1>\n    <p class=\"role\">\n      <span class=\"mask\" style=\"--i:1\"><span class=\"rise\">Software &amp; AI engineering</span></span>\n      <span class=\"mask\" style=\"--i:2\"><span class=\"rise\">Runs, rides, records</span></span>\n    </p>\n  </header>\n\n  <span class=\"rule\" aria-hidden=\"true\" style=\"--i:3\"></span>\n\n  <nav class=\"links\" aria-label=\"Profiles and contact\">\n    <a class=\"link l-github\" style=\"--i:4\" href=\"https://github.com/goobta\" target=\"_blank\" rel=\"noopener noreferrer\"><span class=\"mark\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12\"/></svg></span><span class=\"label\">github</span></a>\n    <a class=\"link l-linkedin\" style=\"--i:5\" href=\"https://www.linkedin.com/in/goobta/\" target=\"_blank\" rel=\"noopener noreferrer\"><span class=\"mark\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z\"/></svg></span><span class=\"label\">linkedin</span></a>\n    <a class=\"link l-email\" style=\"--i:6\" href=\"mailto:rukna1000@gmail.com\"><span class=\"mark\" aria-hidden=\"true\"><svg viewBox=\"0 0 512 512\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48L48 64zM0 176L0 384c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-208L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z\"/></svg></span><span class=\"label\">email</span></a>\n    <a class=\"link l-strava\" style=\"--i:7\" href=\"https://www.strava.com/athletes/115751174\" target=\"_blank\" rel=\"noopener noreferrer\"><span class=\"mark\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169\"/></svg></span><span class=\"label\">strava</span></a>\n    <a class=\"link l-spotify\" style=\"--i:8\" href=\"https://open.spotify.com/user/theultimatepanda\" target=\"_blank\" rel=\"noopener noreferrer\"><span class=\"mark\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z\"/></svg></span><span class=\"label\">spotify</span></a>\n    <a class=\"link l-venmo\" style=\"--i:9\" href=\"https://venmo.com/u/agupta628\" target=\"_blank\" rel=\"noopener noreferrer\"><span class=\"mark\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M3 4h4.4L12 13.4 16.6 4H21l-9 16z\"/></svg></span><span class=\"label\">venmo</span></a>\n  </nav>\n</div>\n\n<p class=\"foot\" style=\"--i:10\">&copy; Ankur Gupta 2026</p>", "d3": "<div class=\"bloom\" aria-hidden=\"true\"></div>\n\n<div class=\"stage\">\n  <header class=\"head\">\n    <p class=\"mark\" style=\"--i:0\"><span class=\"dot\" aria-hidden=\"true\"></span>goobta.io</p>\n    <h1 class=\"name\" style=\"--i:1\">Ankur Gupta</h1>\n    <p class=\"lede\" style=\"--i:2\">Software and AI engineering. Long rides, loud records.</p>\n  </header>\n\n  <nav class=\"nav\" aria-label=\"Ankur Gupta elsewhere on the web\">\n    <ul class=\"grid\" role=\"list\">\n      <li>\n        <a class=\"tile t-github\" style=\"--i:3\" href=\"https://github.com/goobta\" target=\"_blank\" rel=\"noopener noreferrer\">\n          <span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12\"/></svg></span>\n          <span class=\"txt\"><span class=\"label\">GitHub</span><span class=\"sub\">the code</span></span>\n        </a>\n      </li>\n      <li>\n        <a class=\"tile t-linkedin\" style=\"--i:4\" href=\"https://www.linkedin.com/in/goobta/\" target=\"_blank\" rel=\"noopener noreferrer\">\n          <span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z\"/></svg></span>\n          <span class=\"txt\"><span class=\"label\">LinkedIn</span><span class=\"sub\">work history</span></span>\n        </a>\n      </li>\n      <li>\n        <a class=\"tile t-email\" style=\"--i:5\" href=\"mailto:rukna1000@gmail.com\">\n          <span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 512 512\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48L48 64zM0 176L0 384c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-208L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z\"/></svg></span>\n          <span class=\"txt\"><span class=\"label\">Email</span><span class=\"sub\">say hello</span></span>\n        </a>\n      </li>\n      <li>\n        <a class=\"tile t-strava\" style=\"--i:6\" href=\"https://www.strava.com/athletes/115751174\" target=\"_blank\" rel=\"noopener noreferrer\">\n          <span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169\"/></svg></span>\n          <span class=\"txt\"><span class=\"label\">Strava</span><span class=\"sub\">rides &amp; runs</span></span>\n        </a>\n      </li>\n      <li>\n        <a class=\"tile t-spotify\" style=\"--i:7\" href=\"https://open.spotify.com/user/theultimatepanda\" target=\"_blank\" rel=\"noopener noreferrer\">\n          <span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z\"/></svg></span>\n          <span class=\"txt\"><span class=\"label\">Spotify</span><span class=\"sub\">on repeat</span></span>\n        </a>\n      </li>\n      <li>\n        <a class=\"tile t-venmo\" style=\"--i:8\" href=\"https://venmo.com/u/agupta628\" target=\"_blank\" rel=\"noopener noreferrer\">\n          <span class=\"glyph\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" d=\"M3 4h4.4L12 13.4 16.6 4H21l-9 16z\"/></svg></span>\n          <span class=\"txt\"><span class=\"label\">Venmo</span><span class=\"sub\">settle up</span></span>\n        </a>\n      </li>\n    </ul>\n  </nav>\n\n  <p class=\"foot\">&#169; Ankur Gupta 2026</p>\n</div>\n\n<div class=\"grain\" aria-hidden=\"true\"></div>"};</script>
+<script>
+(function () {
+  var src = window.__PB_STAGES__ || {};
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function inject(el) {
+    var id = el.getAttribute('data-stage');
+    if (!src[id]) return;
+    el.innerHTML = '';
+    void el.offsetWidth;          // force reflow so CSS animations restart
+    el.innerHTML = src[id];
+  }
+
+  var stages = Array.prototype.slice.call(document.querySelectorAll('.pb-stage'));
+
+  if (reduce || !('IntersectionObserver' in window)) {
+    stages.forEach(inject);
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { inject(e.target); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '80px 0px' });
+    stages.forEach(function (s) { io.observe(s); });
+  }
+
+  document.querySelectorAll('.pb-replay').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var el = document.querySelector('.pb-stage[data-stage="' + btn.getAttribute('data-replay') + '"]');
+      if (el) inject(el);
+    });
+  });
+})();
+</script>
+</body>
+</html>
