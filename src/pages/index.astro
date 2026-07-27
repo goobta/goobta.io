@@ -55,7 +55,7 @@ const links = [
     path: '/u/agupta628',
     href: 'https://venmo.com/u/agupta628',
     a11y: 'Venmo, venmo.com/u/agupta628',
-    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 4h4.4L12 13.4 16.6 4H21l-9 16z"/></svg>`,
+    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.0 4.6 L10.3 4.0 L11.6 15.2 C13.6 11.9 14.5 8.3 13.5 5.0 L19.4 3.8 C21.2 7.3 20.6 12.1 17.5 16.4 C16.1 18.4 14.7 19.8 13.5 20.6 L6.6 20.6 Z"/></svg>`,
   },
 ];
 
@@ -159,7 +159,11 @@ const commands = Object.fromEntries(links.map((l) => [l.key, l.href]));
   .name {
     /* optical left align: pull the A stem out to the rule edge */
     margin: 0 0 0 -0.025em;
-    font-size: clamp(2.5rem, 7.5vw, 4rem);
+    /* Deliberately not a clamp — the name holds 4rem at every width. It wraps
+       to two lines on a phone rather than shrinking, which keeps the masthead
+       the loudest thing on the page instead of letting it collapse into the
+       listing. Fits down to 320px: the longest word sets ~165px at this size. */
+    font-size: 4rem;
     font-weight: 640;
     line-height: 1.02;
     letter-spacing: -0.038em;
@@ -256,8 +260,11 @@ const commands = Object.fromEntries(links.map((l) => [l.key, l.href]));
   .r-spotify .ico :global(svg) {
     transform: scale(0.94);
   }
+  /* Was 1.06 when this was a thin geometric wedge. The real Venmo letterform
+     is a solid, heavily weighted glyph, so it needs pulling back in line with
+     the other filled marks rather than pushed up. */
   .r-venmo .ico :global(svg) {
-    transform: scale(1.06);
+    transform: scale(0.93);
   }
 
   .row:hover {
@@ -579,8 +586,15 @@ const commands = Object.fromEntries(links.map((l) => [l.key, l.href]));
     render();
   });
 
-  // Clicking anywhere on the prompt line puts you in the field.
-  form.addEventListener('click', () => input.focus());
+  // Click anywhere that is not itself interactive and you land in the prompt —
+  // the whole page behaves like a terminal window. Guarded two ways: real
+  // controls keep their own click, and an active text selection is left alone
+  // so highlighting the email address does not yank focus away mid-drag.
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('a, button, input, textarea, select, label, [contenteditable]')) return;
+    if (String(window.getSelection() || '')) return;
+    input.focus({ preventScroll: true });
+  });
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
