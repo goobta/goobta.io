@@ -1,0 +1,33 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { publicLinks, type PublicLink } from '../commands';
+
+interface Props {
+  link: PublicLink;
+}
+
+export const getStaticPaths = (() =>
+  publicLinks.map((link) => ({
+    params: { command: link.name },
+    props: { link },
+  }))) satisfies GetStaticPaths;
+
+const { link } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta http-equiv="refresh" content={`0;url=${link.href}`} />
+    <title>Opening {link.label}…</title>
+  </head>
+  <body>
+    <p>Opening <a href={link.href}>{link.label}</a>…</p>
+    <script is:inline define:vars={{ destination: link.href }}>
+      window.location.replace(destination);
+    </script>
+  </body>
+</html>
