@@ -1,9 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
-import { autocompleteNames, publicLinks } from '../commands';
+import { autocompleteNames, publicLinks, searchEngines } from '../commands';
 
 const name = 'Ankur Gupta';
 const commandChoices = autocompleteNames.join(', ');
+const atomChoices = searchEngines.map((engine) => `${engine.atom} for ${engine.label}`).join(', ');
 ---
 
 <Base title={name} description={`${name} — software and AI engineering.`}>
@@ -30,33 +31,75 @@ const commandChoices = autocompleteNames.join(', ');
         }
       </nav>
 
-      <div class="prompt">
-        <span class="sig" aria-hidden="true">~ %</span>
+      {/* Two wrappers, two jobs. .shell owns the spacing above the prompt —
+          including the mobile rule that drops it to the foot of the viewport —
+          while .prompt is the cards' containing block. Keeping those separate
+          is what lets `bottom: 100%` mean "just above the prompt line" at every
+          width instead of measuring off a padded edge. */}
+      <div class="shell">
+        <div class="prompt">
+          {/* Ships hidden and stays hidden without JS — searching is a scripted
+              capability, so nothing here is offered before it can work. */}
+          <div class="engines" id="engines" role="listbox" aria-label="Search engine" hidden>
+            {
+              searchEngines.map((engine) => (
+                <button
+                  class={`engine e-${engine.key}`}
+                  id={`engine-${engine.key}`}
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  /* Out of the tab order on purpose: Tab is spent cycling the
+                     cards from inside the field, and landing on them as well
+                     would make the same key mean two things. Still clickable,
+                     which is the only way to pick one on a touch device. */
+                  tabindex="-1"
+                  data-engine={engine.key}
+                >
+                  <span class="mark" aria-hidden="true" set:html={engine.svg} />
+                  <span class="ename">{engine.label}</span>
+                  <span class="eatom">{engine.atom}</span>
+                </button>
+              ))
+            }
+          </div>
 
-        {/* Rendered inert. The script below upgrades it into a real input, so
-            with JS off this stays exactly the static prompt it was, and the
-            six anchors above remain the only thing anyone depends on. */}
-        <form class="field" id="cli" autocomplete="off" data-inert>
-          <label class="vh" for="cmd">
-            Type a destination — {commandChoices} — then press Enter to run it. Tab completes the
-            name, and cycles when more than one matches.
-          </label>
-          <input
-            class="cmd"
-            id="cmd"
-            type="text"
-            hidden
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="none"
-            spellcheck="false"
-            enterkeyhint="go"
-            data-1p-ignore
-            data-lpignore="true"
-          />
-          <span class="caret" aria-hidden="true"></span>
-          <span class="ghost" aria-hidden="true"></span>
-        </form>
+          <span class="sig" aria-hidden="true">~ %</span>
+
+          {/* Rendered inert. The script below upgrades it into a real input, so
+              with JS off this stays exactly the static prompt it was, and the
+              six anchors above remain the only thing anyone depends on. */}
+          <form class="field" id="cli" autocomplete="off" data-inert>
+            <label class="vh" for="cmd">
+              Type a destination — {commandChoices} — then press Enter to run it. Tab completes the
+              name, and cycles when more than one matches. Type a space to search instead: Tab and
+              Shift+Tab pick the engine, or name it inline with {atomChoices}.
+            </label>
+            <input
+              class="cmd"
+              id="cmd"
+              type="text"
+              hidden
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="none"
+              spellcheck="false"
+              enterkeyhint="go"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="engines"
+              aria-autocomplete="list"
+              data-1p-ignore
+              data-lpignore="true"
+            />
+            {/* Syntax layer. An <input> cannot colour part of its own value, so
+                the text is re-drawn here and the input's own glyphs go
+                transparent — the only way to light up an atom in place. */}
+            <span class="mirror" aria-hidden="true"></span>
+            <span class="caret" aria-hidden="true"></span>
+            <span class="ghost" aria-hidden="true"></span>
+          </form>
+        </div>
       </div>
 
       <p class="resp" id="resp" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -225,8 +268,12 @@ const commandChoices = autocompleteNames.join(', ');
 
   /* ── Prompt — the one genuinely terminal element ─────────────────── */
 
-  .prompt {
+  .shell {
     margin-top: 3rem;
+  }
+
+  .prompt {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -235,6 +282,129 @@ const commandChoices = autocompleteNames.join(', ');
     line-height: 1.2;
     letter-spacing: 0.04em;
     color: var(--ink-soft);
+  }
+
+  /* ── Engine cards ────────────────────────────────────────────────── */
+
+  /* Absolute, so appearing and disappearing never moves the prompt or the
+     colophon — the line you are typing on has to stay still. */
+  .engines {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 0.625rem);
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  /* A class-level `display` outranks the UA's `[hidden] { display: none }`, so
+     without this the cards would ship visible. */
+  .engines[hidden] {
+    display: none;
+  }
+
+  .engine {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    /* Opaque: these float over the listing. */
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    /* Properly rounded, unlike the 2px used elsewhere on the page — these are
+       the only things that float above the layout, and the radius is what makes
+       them read as cards rather than as another ruled row. */
+    border-radius: 6px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    /* Buttons do not inherit type. */
+    font: inherit;
+    letter-spacing: inherit;
+    transition:
+      border-color 120ms linear,
+      background-color 120ms linear,
+      color 120ms linear;
+
+    /* The rise. Cards start low and fade up out of the prompt line; toggling
+       `hidden` restarts this, so it replays every time they reappear. */
+    animation: engine-rise 200ms cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  }
+
+  /* Staggered so they read as coming up out of the prompt one after another
+     rather than as one block appearing. */
+  .engines .engine:nth-child(2) {
+    animation-delay: 55ms;
+  }
+
+  .mark {
+    display: flex;
+    line-height: 0;
+  }
+
+  .mark :global(svg) {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .ename {
+    font-family: var(--sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.115em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .eatom {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+  }
+
+  /* What Enter will use when nothing has been picked yet. Deliberately quieter
+     than a selection — a dashed edge says "this is the fallback", where the
+     filled accent state says "you chose this". */
+  .engine.is-default {
+    border-style: dashed;
+    border-color: var(--rule-strong);
+  }
+
+  .engine.is-on {
+    border-style: solid;
+    border-color: var(--accent);
+    background: var(--sel);
+    color: var(--accent);
+  }
+
+  .engine.is-on .ename,
+  .engine.is-on .eatom {
+    color: var(--accent);
+  }
+
+  .engine:hover {
+    border-color: var(--rule-strong);
+    color: var(--ink);
+  }
+
+  .engine.is-on:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .engine:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @keyframes engine-rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.375rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 
   .sig {
@@ -259,12 +429,20 @@ const commandChoices = autocompleteNames.join(', ');
     font-family: var(--mono);
     font-size: 0.75rem;
     letter-spacing: var(--track);
+    /* A long query scrolls the input; the mirror and caret are moved by the same
+       --scroll, and this keeps the overflow from painting outside the field. */
+    overflow: hidden;
   }
 
   .cmd {
     width: 100%;
     margin: 0;
     padding: 0;
+    /* One cell of trailing room, which is load-bearing once a query outgrows the
+       field: the browser scrolls only far enough to fit its own 1px caret, so a
+       full-cell block would hang off the right edge and vanish exactly when you
+       are typing. Reserving the cell makes its scroll stop one cell short. */
+    padding-right: calc(1ch + var(--track));
     border: 0;
     background: none;
     font: inherit;
@@ -274,16 +452,47 @@ const commandChoices = autocompleteNames.join(', ');
     caret-color: transparent;
   }
 
+  /* Set once the mirror is live and drawing the text. Until then the input
+     paints its own value, so a broken upgrade cannot leave an invisible field. */
+  .field.mirrored .cmd {
+    color: transparent;
+  }
+
   .cmd:focus {
     outline: none;
+  }
+
+  /* Draws the same string as the input, in the same cell grid, with the atoms
+     coloured. Sits on top of the input, which is why it must never take a
+     pointer event. */
+  .mirror {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    white-space: pre;
+    transform: translateX(calc(-1 * var(--scroll, 0px)));
+    color: var(--ink);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Global: these spans are built by the script, so they never carry Astro's
+     scope attribute — the same reason .ico reaches its SVG this way. */
+  .mirror :global(.atom) {
+    color: var(--accent);
   }
 
   .caret {
     position: absolute;
     left: 0;
     /* `--col` is the input's selectionStart, so the block tracks arrow keys and
-       clicks, not just typed length. Monospace makes the ch math exact. */
-    transform: translateX(calc(var(--col, 0) * (1ch + var(--track))));
+       clicks, not just typed length. Monospace makes the ch math exact.
+       `--scroll` is the input's own scrollLeft, which is non-zero as soon as a
+       query outgrows the field — without it the block walks off the end. */
+    transform: translateX(calc(var(--col, 0) * (1ch + var(--track)) - var(--scroll, 0px)));
     /* A full character cell, tracking included — so it reads as a block cursor
        sitting on a cell rather than a bar next to one. */
     width: calc(1ch + var(--track));
@@ -328,7 +537,7 @@ const commandChoices = autocompleteNames.join(', ');
   .ghost {
     position: absolute;
     left: 0;
-    transform: translateX(calc((var(--col, 0) + 1) * (1ch + var(--track))));
+    transform: translateX(calc((var(--col, 0) + 1) * (1ch + var(--track)) - var(--scroll, 0px)));
     white-space: pre;
     color: var(--ink-soft);
     pointer-events: none;
@@ -433,8 +642,10 @@ const commandChoices = autocompleteNames.join(', ');
     }
 
     /* auto eats the free height between the listing and the prompt; the padding
-       is the floor, for when there is no free height to eat. */
-    .prompt {
+       is the floor, for when there is no free height to eat. This sits on the
+       wrapper rather than .prompt so it cannot shift the cards, which measure
+       themselves against .prompt's own box. */
+    .shell {
       margin-top: auto;
       padding-top: 3rem;
     }
@@ -442,8 +653,13 @@ const commandChoices = autocompleteNames.join(', ');
 
   @media (prefers-reduced-motion: reduce) {
     .row,
-    .ico {
+    .ico,
+    .engine {
       transition: none;
+    }
+    /* The cards still appear, they just stop travelling to get there. */
+    .engine {
+      animation: none;
     }
     /* Must out-specify `.field:focus-within .caret`, which sets the blink —
        a bare `.caret` rule here would silently lose to it. */
@@ -455,7 +671,15 @@ const commandChoices = autocompleteNames.join(', ');
 </style>
 
 <script>
-  import { autocompleteNames, executeCommand, hasCommand } from '../commands';
+  import {
+    autocompleteNames,
+    defaultEngine,
+    engineByKey,
+    executeCommand,
+    readInput,
+    searchEngines,
+    searchUrl,
+  } from '../commands';
 
   // Progressive enhancement: the prompt ships inert and is upgraded here.
   // Every destination is already reachable through the six anchors above, so
@@ -463,8 +687,11 @@ const commandChoices = autocompleteNames.join(', ');
   const form = document.getElementById('cli');
   const input = document.getElementById('cmd');
   const resp = document.getElementById('resp');
+  const engines = document.getElementById('engines');
   const caret = form.querySelector('.caret');
   const ghost = form.querySelector('.ghost');
+  const mirror = form.querySelector('.mirror');
+  const cards = [...engines.querySelectorAll('.engine')];
 
   // Completion includes public links and public commands, in registry order.
   // Private commands remain executable without becoming discoverable here.
@@ -472,12 +699,17 @@ const commandChoices = autocompleteNames.join(', ');
 
   input.hidden = false;
   form.removeAttribute('data-inert');
+  // Hands the text over to the mirror. Only now, so a failure above this line
+  // leaves a field that still paints its own value.
+  form.classList.add('mirrored');
 
-  // Ready to type on load. Guarded to fine pointers: on a touch device
-  // focusing an input forces the on-screen keyboard up over the page before
-  // the visitor has seen anything, which is hostile. preventScroll keeps the
-  // masthead in view if the prompt sits below the fold.
-  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  // On a touch device focusing an input forces the on-screen keyboard up over
+  // the page, which is hostile — so every focus call here is gated on this.
+  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+
+  // Ready to type on load. preventScroll keeps the masthead in view if the
+  // prompt sits below the fold.
+  if (finePointer.matches) {
     input.focus({ preventScroll: true });
   }
 
@@ -485,6 +717,12 @@ const commandChoices = autocompleteNames.join(', ');
   // the matches for that stem instead of re-completing its own output.
   let stem = null;
   let cycle = 0;
+
+  // The engine chosen by hand, via Tab or a click. Null means nobody has
+  // chosen, and the atom — or failing that, the first engine — decides.
+  let picked = null;
+  // Last atom seen, so a change in it can be told from a re-render.
+  let atomKey = null;
 
   const matchesFor = (p) => (p ? NAMES.filter((n) => n.startsWith(p)) : []);
   const typed = () => input.value.trim().toLowerCase();
@@ -505,10 +743,71 @@ const commandChoices = autocompleteNames.join(', ');
     }
   };
 
+  // Redraws the input's value with its atoms lit. Rebuilt rather than patched
+  // because the atoms move with every keystroke, and a wrong offset here would
+  // colour the wrong characters.
+  const paintMirror = (state) => {
+    const value = input.value;
+    mirror.textContent = '';
+
+    let at = 0;
+    for (const span of state.atoms) {
+      if (span.start > at) mirror.append(value.slice(at, span.start));
+      const lit = document.createElement('span');
+      lit.className = 'atom';
+      lit.textContent = value.slice(span.start, span.end);
+      mirror.append(lit);
+      at = span.end;
+    }
+    if (at < value.length) mirror.append(value.slice(at));
+  };
+
+  // The engine Enter would use right now: a hand-pick first, then the atom, and
+  // null when neither has spoken — which searchUrl reads as the first engine.
+  const active = (state) => (state.isSearch ? picked ?? state.atomKey : null);
+
+  const paintEngines = (state) => {
+    engines.hidden = !state.isSearch;
+    input.setAttribute('aria-expanded', String(state.isSearch));
+
+    const on = active(state);
+    // Nothing chosen still has an answer, and the dashed card is that answer
+    // made visible — otherwise the fallback is a secret Enter keeps.
+    const fallback = state.isSearch && !on ? defaultEngine.key : null;
+
+    for (const card of cards) {
+      const isOn = card.dataset.engine === on;
+      card.classList.toggle('is-on', isOn);
+      card.classList.toggle('is-default', card.dataset.engine === fallback);
+      card.setAttribute('aria-selected', String(isOn));
+    }
+
+    if (on) input.setAttribute('aria-activedescendant', `engine-${on}`);
+    else input.removeAttribute('aria-activedescendant');
+  };
+
   const render = () => {
     const col = input.selectionStart ?? input.value.length;
-    caret.style.setProperty('--col', col);
-    ghost.style.setProperty('--col', col);
+    // Both live on the field so the caret, the ghost and the mirror all read the
+    // same two numbers — they cannot drift apart if they share the source.
+    form.style.setProperty('--col', col);
+    form.style.setProperty('--scroll', `${input.scrollLeft}px`);
+
+    const state = readInput(input.value);
+
+    // The atom authors the selection, so a change in it retires whatever was
+    // picked by hand. Without this, typing /d after Tabbing to Google would
+    // leave the atom lit and the other card selected.
+    if (state.atomKey !== atomKey) {
+      atomKey = state.atomKey;
+      picked = null;
+    }
+    // Leaving search mode clears the choice, so the cards never come back
+    // carrying a selection from a query that is already gone.
+    if (!state.isSearch) picked = null;
+
+    paintMirror(state);
+    paintEngines(state);
 
     // Only hint when the cursor is at the end — a suggestion trailing a
     // mid-string cursor would be describing text that is not there.
@@ -520,6 +819,21 @@ const commandChoices = autocompleteNames.join(', ');
     caret.textContent = rest ? rest[0] : '';
     ghost.textContent = rest ? rest.slice(1) : '';
     form.classList.toggle('has-ghost', !!rest);
+  };
+
+  // Clears the line and hands off to the engine. Called from Enter and from a
+  // card click, which are both gestures, so the popup blocker stays satisfied.
+  const runSearch = (query, key) => {
+    const engine = engineByKey(key) ?? defaultEngine;
+    say(`searching ${engine.label}…`, { ttl: 1000 });
+
+    input.value = '';
+    picked = null;
+    stem = null;
+    cycle = 0;
+    render();
+
+    window.open(searchUrl(engine.key, query), '_blank', 'noopener,noreferrer');
   };
 
   // selectionStart lags the keystroke on keydown, so sync after the event loop
@@ -536,7 +850,34 @@ const commandChoices = autocompleteNames.join(', ');
   });
 
   input.addEventListener('keydown', (e) => {
-    if (e.key !== 'Tab' || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
+
+    // Once this is a search, Tab has no name left to complete, so it walks the
+    // engine cards instead — forwards, or backwards under Shift.
+    const state = readInput(input.value);
+    if (state.isSearch) {
+      const on = active(state);
+      const from = on ? searchEngines.findIndex((engine) => engine.key === on) : null;
+      // Entering the list for the first time comes in from whichever end the key
+      // is pointing: Tab lands on the first card, Shift+Tab on the last.
+      const next =
+        from === null
+          ? e.shiftKey
+            ? searchEngines.length - 1
+            : 0
+          : from + (e.shiftKey ? -1 : 1);
+
+      // Walking off either end releases the key rather than wrapping, so the
+      // field stays escapable in both directions.
+      if (next < 0 || next >= searchEngines.length) return;
+
+      e.preventDefault();
+      picked = searchEngines[next].key;
+      render();
+      return;
+    }
+
+    if (e.shiftKey) return;
 
     const cur = typed();
     // Never swallow Tab on an empty field — that would trap the keyboard.
@@ -557,6 +898,21 @@ const commandChoices = autocompleteNames.join(', ');
     render();
   });
 
+  // A card is a commit, not just a highlight — it is the whole interaction on a
+  // touch device, where there is no Tab key to select with and no Enter to
+  // follow up. With nothing to search for yet it only takes the highlight.
+  engines.addEventListener('click', (e) => {
+    const card = e.target.closest('.engine');
+    if (!card) return;
+
+    picked = card.dataset.engine;
+    render();
+
+    const { query } = readInput(input.value);
+    if (query) runSearch(query, picked);
+    if (finePointer.matches) input.focus({ preventScroll: true });
+  });
+
   // Click anywhere that is not itself interactive and you land in the prompt —
   // the whole page behaves like a terminal window. Guarded two ways: real
   // controls keep their own click, and an active text selection is left alone
@@ -570,10 +926,21 @@ const commandChoices = autocompleteNames.join(', ');
   form.addEventListener('submit', (e) => {
     e.preventDefault();
 
+    const state = readInput(input.value);
     const cmd = input.value.trim().toLowerCase();
     if (!cmd) return;
 
-    if (!hasCommand(cmd)) {
+    // Enter runs whatever the cards are showing as highlighted, which is the
+    // hand-picked engine, else the atom's, else the first in the registry.
+    if (state.isSearch) {
+      // Atoms only, no query — there is nothing to search for, so the line
+      // stands rather than opening an empty result page.
+      if (!state.query) return;
+      runSearch(state.query, active(state));
+      return;
+    }
+
+    if (!state.command) {
       // Clear on a miss too, so the prompt is always ready for the next try
       // and the message is the only record of what happened.
       input.value = '';

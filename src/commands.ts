@@ -91,6 +91,110 @@ export const publicLinks = [
   },
 ] as const satisfies readonly PublicLink[];
 
+// ── Search ──────────────────────────────────────────────────────────────────
+
+export interface SearchEngine {
+  key: string;
+  label: string;
+  /** Typed as its own word anywhere in the query to pick this engine. */
+  atom: string;
+  /** The query is appended URL-encoded. */
+  search: string;
+  svg: string;
+}
+
+// Order is the keyboard order: Tab walks down this list, Shift+Tab walks up it,
+// and the first entry is what Enter uses when nothing has been picked.
+export const searchEngines = [
+  {
+    key: 'google',
+    label: 'Google',
+    atom: '/g',
+    search: 'https://www.google.com/search?q=',
+    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>`,
+  },
+  {
+    key: 'duckduckgo',
+    label: 'DuckDuckGo',
+    atom: '/d',
+    search: 'https://duckduckgo.com/?q=',
+    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 23C5.925 23 1 18.074 1 12S5.926 1 12 1s11 4.925 11 11-4.925 11-11 11zm10.219-11c0 4.805-3.317 8.833-7.786 9.925-.27-.521-.53-1.017-.749-1.438.645.249 1.93.718 2.208.615.376-.144.282-3.149-.14-3.245-.338-.075-1.632.837-2.141 1.209l.034.156c.078.397.144.993.03 1.247-.001.004-.002.01-.004.013a.218.218 0 0 1-.068.088c-.284.188-1.081.284-1.503.188a.516.516 0 0 1-.064-.02c-.694.396-2.01 1.109-2.25.971-.329-.188-.377-2.676-.329-3.288.035-.46 1.653.286 2.442.679.174-.163.602-.272.98-.31-.57-1.389-.99-2.977-.733-4.105 0 .002.002.002.002.002.356.248 2.73 1.05 3.91 1.027 1.18-.024 3.114-.743 2.903-1.323-.212-.58-2.135.51-4.142.324-1.486-.138-1.748-.804-1.42-1.29.414-.611 1.168.116 2.411-.256 1.245-.371 2.987-1.035 3.632-1.397 1.494-.833-.625-1.177-1.125-.947-.474.22-2.123.637-2.889.82.428-1.516-.603-4.149-1.757-5.3-.376-.376-.951-.612-1.603-.736-.25-.344-.654-.671-1.225-.977a5.772 5.772 0 0 0-3.595-.584l-.024.004-.034.004.004.002c-.148.028-.237.08-.357.098.148.016.705.276 1.057.418-.174.068-.412.108-.596.184a.828.828 0 0 0-.204.056c-.173.08-.303.375-.3.515.84-.086 2.082-.026 2.991.246-.644.09-1.235.258-1.661.482-.016.008-.03.018-.048.028-.054.02-.106.042-.152.066-1.367.72-1.971 2.405-1.611 4.424.323 1.824 1.665 8.088 2.29 11.064-3.973-1.4-6.822-5.186-6.822-9.639C1.781 6.356 6.356 1.781 12 1.781S22.219 6.356 22.219 12zM9.095 9.581a.758.758 0 1 0 0 1.516.758.758 0 0 0 0-1.516zm.338.702a.196.196 0 1 1 0-.392.196.196 0 0 1 0 .392zm4.724-1.043a.65.65 0 1 0 0 1.299.65.65 0 0 0 0-1.3zm.29.601a.168.168 0 1 1 0-.336.168.168 0 0 1 0 .336zM9.313 8.146s-.571-.26-1.125.09c-.554.348-.534.704-.534.704s-.294-.656.49-.978c.786-.32 1.17.184 1.17.184zm5.236-.052s-.41-.234-.73-.23c-.654.008-.831.296-.831.296s.11-.688.945-.55a.84.84 0 0 1 .616.484z"/></svg>`,
+  },
+] as const satisfies readonly SearchEngine[];
+
+export const defaultEngine: SearchEngine = searchEngines[0];
+
+const enginesByAtom = new Map<string, SearchEngine>(
+  searchEngines.map((engine) => [engine.atom, engine]),
+);
+
+for (const engine of searchEngines) {
+  // An atom that could also be a command name would make one of the two
+  // unreachable. Command names are [a-z0-9-] only, so a leading slash is
+  // already disjoint — this asserts the property rather than trusting it.
+  if (!engine.atom.startsWith('/')) {
+    throw new Error(`Search atom "${engine.atom}" must start with "/" to stay out of command space.`);
+  }
+}
+
+export const engineByKey = (key: string | null): SearchEngine | undefined =>
+  searchEngines.find((engine) => engine.key === key);
+
+export interface AtomSpan {
+  start: number;
+  end: number;
+  key: string;
+}
+
+export interface InputReading {
+  /** Character spans of every recognised atom, for highlighting in place. */
+  atoms: AtomSpan[];
+  /** First atom wins, so the highlight does not jump as more text is typed. */
+  atomKey: string | null;
+  /** The input with every atom removed — what actually gets searched. */
+  query: string;
+  /** Set when the whole input is an exact command name. */
+  command: string | null;
+  /** True when Enter would run a search rather than a command. */
+  isSearch: boolean;
+}
+
+/**
+ * Single reading of the prompt, shared by the view and the Enter key so the
+ * cards can never disagree with what Enter actually does.
+ */
+export function readInput(value: string): InputReading {
+  const atoms: AtomSpan[] = [];
+  const words: string[] = [];
+
+  // Walked as tokens with their offsets, because the atoms have to be located
+  // in the original string to be highlighted, not just counted.
+  const token = /\S+/g;
+  let match: RegExpExecArray | null;
+  while ((match = token.exec(value)) !== null) {
+    const engine = enginesByAtom.get(match[0].toLowerCase());
+    if (engine) atoms.push({ start: match.index, end: token.lastIndex, key: engine.key });
+    else words.push(match[0]);
+  }
+
+  const command = value.trim().toLowerCase();
+  const isCommand = hasCommand(command);
+
+  return {
+    atoms,
+    atomKey: atoms.length ? atoms[0].key : null,
+    query: words.join(' '),
+    command: isCommand ? command : null,
+    // A space after the first word is the trigger; an atom is search intent on
+    // its own. An exact command still wins either way, so `github ` keeps
+    // opening GitHub instead of quietly turning into a search.
+    isSearch: !isCommand && (/\S\s/.test(value) || atoms.length > 0),
+  };
+}
+
+export const searchUrl = (key: string | null, query: string): string =>
+  `${(engineByKey(key) ?? defaultEngine).search}${encodeURIComponent(query)}`;
+
 // Public commands are discoverable in autocomplete and executable from the
 // prompt, but never appear in the link table or receive shortcut pages.
 export const publicCommands = [] as const satisfies readonly PublicCommand[];
