@@ -395,20 +395,48 @@ const commandChoices = autocompleteNames.join(', ');
   /* ── Narrow ──────────────────────────────────────────────────────── */
 
   @media (max-width: 30rem) {
-    .row {
-      /* Drop the icon column and let the path fall under the label, rather
-         than deleting the path — it is the most useful thing in the row.
-         Rows grow to a real 44px touch target in the process. */
-      grid-template-columns: minmax(0, 1fr);
-      row-gap: 0.1875rem;
-      padding: 0.625rem;
+    /* The page becomes a full-height column so the prompt can be pushed to the
+       foot of the viewport instead of trailing the listing. */
+    main {
+      align-items: stretch;
     }
-    .ico {
+
+    .page {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .row {
+      /* The mark identifies the destination on its own at this width, so the
+         word is dropped and the path — the useful half of the row — moves up
+         beside the icon on one line. min-height holds the 44px touch target
+         the two-line layout used to get for free. */
+      grid-template-columns: 1rem minmax(0, 1fr);
+      column-gap: 0.6875rem;
+      align-items: center;
+      min-height: 2.75rem;
+      padding: 0.5rem 0.625rem;
+    }
+    .label {
+      /* The row's accessible name comes from the anchor's aria-label, so the
+         visible word is redundant to assistive tech, not lost. */
       display: none;
     }
-    .label,
     .path {
-      grid-column: 1;
+      /* Now the only text in the row, so it takes the ink the label had. */
+      font-size: 0.8125rem;
+      color: var(--ink);
+    }
+    .ico :global(svg) {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    /* auto eats the free height between the listing and the prompt; the padding
+       is the floor, for when there is no free height to eat. */
+    .prompt {
+      margin-top: auto;
+      padding-top: 3rem;
     }
   }
 
