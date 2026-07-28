@@ -821,8 +821,8 @@ const atomChoices = searchEngines.map((engine) => `${engine.atom} for ${engine.l
     form.classList.toggle('has-ghost', !!rest);
   };
 
-  // Clears the line and hands off to the engine. Called from Enter and from a
-  // card click, which are both gestures, so the popup blocker stays satisfied.
+  // Clears the line and hands off to the engine in this tab. Called from Enter
+  // and from a card click.
   const runSearch = (query, key) => {
     const engine = engineByKey(key) ?? defaultEngine;
     say(`searching ${engine.label}…`, { ttl: 1000 });
@@ -833,7 +833,7 @@ const atomChoices = searchEngines.map((engine) => `${engine.atom} for ${engine.l
     cycle = 0;
     render();
 
-    window.open(searchUrl(engine.key, query), '_blank', 'noopener,noreferrer');
+    window.location.assign(searchUrl(engine.key, query));
   };
 
   // selectionStart lags the keystroke on keydown, so sync after the event loop
