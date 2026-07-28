@@ -84,9 +84,9 @@ export const publicLinks = [
     kind: 'public-link',
     name: 'venmo',
     label: 'Venmo',
-    path: '/u/agupta628',
-    href: 'https://venmo.com/u/agupta628',
-    a11y: 'Venmo, venmo.com/u/agupta628',
+    path: '/u/goobta',
+    href: 'https://venmo.com/u/goobta',
+    a11y: 'Venmo, venmo.com/u/goobta',
     svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.0 4.6 L10.3 4.0 L11.6 15.2 C13.6 11.9 14.5 8.3 13.5 5.0 L19.4 3.8 C21.2 7.3 20.6 12.1 17.5 16.4 C16.1 18.4 14.7 19.8 13.5 20.6 L6.6 20.6 Z"/></svg>`,
   },
 ] as const satisfies readonly PublicLink[];
