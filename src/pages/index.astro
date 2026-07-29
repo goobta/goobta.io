@@ -12,7 +12,7 @@ const atomChoices = searchEngines.map((engine) => `${engine.atom} for ${engine.l
     <div class="page">
       <h1 class="name">{name}<span class="stop" aria-hidden="true">.</span></h1>
 
-      <nav class="index" aria-label="Profiles and contact">
+      <nav class="index" aria-label="Profiles, services, and contact">
         {
           publicLinks.map((link) => (
             <a
@@ -209,7 +209,7 @@ const atomChoices = searchEngines.map((engine) => `${engine.atom} for ${engine.l
   }
 
   /* One 14px optical box, one colour, no shadow. The per-mark scale
-     normalises the mismatched apparent weights of the six glyphs. */
+     normalises the mismatched apparent weights of the glyphs. */
   .ico {
     align-self: center;
     display: flex;

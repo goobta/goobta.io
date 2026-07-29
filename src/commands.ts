@@ -82,6 +82,15 @@ export const publicLinks = [
   },
   {
     kind: 'public-link',
+    name: 'split',
+    label: 'Settle',
+    path: 'split.goobta.io',
+    href: 'https://split.goobta.io',
+    a11y: 'split.goobta.io',
+    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2v20M17 6.5H9.75a3.75 3.75 0 0 0 0 7.5h4.5a3.75 3.75 0 0 1 0 7.5H7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  },
+  {
+    kind: 'public-link',
     name: 'venmo',
     label: 'Venmo',
     path: '/u/goobta',
