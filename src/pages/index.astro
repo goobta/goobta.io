@@ -682,7 +682,7 @@ const atomChoices = searchEngines.map((engine) => `${engine.atom} for ${engine.l
   } from '../commands';
 
   // Progressive enhancement: the prompt ships inert and is upgraded here.
-  // Every destination is already reachable through the six anchors above, so
+  // Every public destination is already reachable through the anchors above, so
   // nothing is lost if this never runs.
   const form = document.getElementById('cli');
   const input = document.getElementById('cmd');
@@ -821,6 +821,11 @@ const atomChoices = searchEngines.map((engine) => `${engine.atom} for ${engine.l
     form.classList.toggle('has-ghost', !!rest);
   };
 
+  // Search and commands share the same navigation policy: anything run from
+  // the prompt takes over this tab. Table anchors keep their own `_blank`
+  // behavior independently in the markup above.
+  const navigateHere = (url) => window.location.assign(url);
+
   // Clears the line and hands off to the engine in this tab. Called from Enter
   // and from a card click.
   const runSearch = (query, key) => {
@@ -833,7 +838,7 @@ const atomChoices = searchEngines.map((engine) => `${engine.atom} for ${engine.l
     cycle = 0;
     render();
 
-    window.location.assign(searchUrl(engine.key, query));
+    navigateHere(searchUrl(engine.key, query));
   };
 
   // selectionStart lags the keystroke on keydown, so sync after the event loop
@@ -959,13 +964,10 @@ const atomChoices = searchEngines.map((engine) => `${engine.atom} for ${engine.l
     cycle = 0;
     render();
 
-    // Execute immediately within the submit gesture so URL commands are not
-    // blocked by popup protection. Handlers may still finish asynchronously.
+    // Every command receives the same-tab navigator, including private
+    // commands. Handlers may still finish asynchronously.
     void executeCommand(cmd, {
-      openUrl: (url) => {
-        if (url.startsWith('mailto:')) window.location.href = url;
-        else window.open(url, '_blank', 'noopener,noreferrer');
-      },
+      openUrl: navigateHere,
     }).catch(() => {
       say(`command failed: ${cmd}`, { error: true });
     });
