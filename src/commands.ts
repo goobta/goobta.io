@@ -75,6 +75,15 @@ export const publicLinks = [
   },
   {
     kind: 'public-link',
+    name: 'venmo',
+    label: 'Venmo',
+    path: '/u/goobta',
+    href: 'https://venmo.com/u/goobta',
+    a11y: 'Venmo, venmo.com/u/goobta',
+    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.0 4.6 L10.3 4.0 L11.6 15.2 C13.6 11.9 14.5 8.3 13.5 5.0 L19.4 3.8 C21.2 7.3 20.6 12.1 17.5 16.4 C16.1 18.4 14.7 19.8 13.5 20.6 L6.6 20.6 Z"/></svg>`,
+  },
+  {
+    kind: 'public-link',
     name: 'spotify',
     label: 'Spotify',
     path: '/user/theultimatepanda',
@@ -89,16 +98,7 @@ export const publicLinks = [
     path: libraryHost,
     href: libraryUrl,
     a11y: `Library, ${libraryHost}`,
-    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 4.5h6a4 4 0 0 1 4 4V21a3 3 0 0 0-3-3H2zM22 4.5h-6a4 4 0 0 0-4 4V21a3 3 0 0 1 3-3h7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  },
-  {
-    kind: 'public-link',
-    name: 'venmo',
-    label: 'Venmo',
-    path: '/u/goobta',
-    href: 'https://venmo.com/u/goobta',
-    a11y: 'Venmo, venmo.com/u/goobta',
-    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.0 4.6 L10.3 4.0 L11.6 15.2 C13.6 11.9 14.5 8.3 13.5 5.0 L19.4 3.8 C21.2 7.3 20.6 12.1 17.5 16.4 C16.1 18.4 14.7 19.8 13.5 20.6 L6.6 20.6 Z"/></svg>`,
+    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9 12 3.5 21.5 9z"/><path d="M5 12v6M9.67 12v6M14.33 12v6M19 12v6M2.5 21h19"/></g></svg>`,
   },
 ] as const satisfies readonly PublicLink[];
 
