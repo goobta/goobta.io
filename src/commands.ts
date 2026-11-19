@@ -95,7 +95,7 @@ export const publicLinks = [
     kind: 'public-link',
     name: 'library',
     label: 'Library',
-    path: libraryHost,
+    path: '/library',
     href: libraryUrl,
     a11y: `Library, ${libraryHost}`,
     svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9 12 3.5 21.5 9z"/><path d="M5 12v6M9.67 12v6M14.33 12v6M19 12v6M2.5 21h19"/></g></svg>`,
