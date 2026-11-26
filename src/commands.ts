@@ -32,6 +32,8 @@ export type CommandEntry = PublicLink | PublicCommand | PrivateCommand;
 const email = 'rukna1000@gmail.com';
 const libraryHost = 'library.goobta.io';
 const libraryUrl = `https://${libraryHost}`;
+const arcadeHost = 'arcade.goobta.io';
+const arcadeUrl = `https://${arcadeHost}`;
 
 // Public links are the fully discoverable entries: they render in the table,
 // participate in autocomplete, execute from the prompt, and receive a matching
@@ -99,6 +101,15 @@ export const publicLinks = [
     href: libraryUrl,
     a11y: `Library, ${libraryHost}`,
     svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9 12 3.5 21.5 9z"/><path d="M5 12v6M9.67 12v6M14.33 12v6M19 12v6M2.5 21h19"/></g></svg>`,
+  },
+  {
+    kind: 'public-link',
+    name: 'arcade',
+    label: 'Arcade',
+    path: '/arcade',
+    href: arcadeUrl,
+    a11y: `Arcade, ${arcadeHost}`,
+    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4z"/><path d="M6.5 12h3M8 10.5v3M15.5 13h.01M18 11h.01"/></g></svg>`,
   },
 ] as const satisfies readonly PublicLink[];
 
@@ -215,6 +226,12 @@ export const publicCommands = [
     // Alias for the `library` link.
     execute: ({ openUrl }) => openUrl(libraryUrl),
   },
+  {
+    kind: 'public-command',
+    name: 'play',
+    // Alias for the `arcade` link.
+    execute: ({ openUrl }) => openUrl(arcadeUrl),
+  },
 ] as const satisfies readonly PublicCommand[];
 
 // Private commands are executable only. They are intentionally absent from the
@@ -225,6 +242,11 @@ export const privateCommands = [
     kind: 'private-command',
     name: 'mcp',
     execute: ({ openUrl }) => openUrl('https://mcp.goobta.io/login'),
+  },
+  {
+    kind: 'private-command',
+    name: 'vault',
+    execute: ({ openUrl }) => openUrl('https://vault.goobta.io'),
   },
 ] as const satisfies readonly PrivateCommand[];
 
