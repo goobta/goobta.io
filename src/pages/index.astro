@@ -68,7 +68,7 @@ const atomChoices = searchEngines.map((engine) => `${engine.atom} for ${engine.l
 
           {/* Rendered inert. The script below upgrades it into a real input, so
               with JS off this stays exactly the static prompt it was, and the
-              six anchors above remain the only thing anyone depends on. */}
+              anchors above remain the only thing anyone depends on. */}
           <form class="field" id="cli" autocomplete="off" data-inert>
             <label class="vh" for="cmd">
               Type a destination — {commandChoices} — then press Enter to run it. Tab completes the
